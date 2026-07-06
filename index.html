@@ -1892,15 +1892,15 @@
 
       <div class="home-stats">
         <div class="home-stat">
-          <div class="v">142</div>
+          <div class="v" id="homeStatChats">0</div>
           <div class="l">Чатов</div>
         </div>
         <div class="home-stat">
-          <div class="v lime">38</div>
+          <div class="v lime" id="homeStatMatches">0</div>
           <div class="l">Матчей</div>
         </div>
         <div class="home-stat">
-          <div class="v gold">7</div>
+          <div class="v gold" id="homeStatStreak">0</div>
           <div class="l">Streak</div>
         </div>
       </div>
@@ -1908,7 +1908,7 @@
       <div class="streak-banner" onclick="goTo('profile')">
         <div class="si"><svg><use href="#i-flame"/></svg></div>
         <div class="body">
-          <div class="t">7 дней подряд!</div>
+          <div class="t" id="homeStreakText">0 дней подряд!</div>
           <div class="d">// STREAK ACTIVE</div>
         </div>
       </div>
@@ -1939,7 +1939,7 @@
           <div class="ai"><svg><use href="#i-bolt"/></svg></div>
           <div>
             <div class="at">Лимиты</div>
-            <div class="ad">3 осталось</div>
+            <div class="ad" id="homeLimitText">— осталось</div>
           </div>
         </div>
       </div>
@@ -2153,12 +2153,12 @@
 
       <div class="slot-counter">
         <div class="digit-box">
-          <div class="digit red">0</div>
+          <div class="digit red" id="limitRemaining">0</div>
           <div class="lab">Осталось</div>
         </div>
         <div class="slash">/</div>
         <div class="digit-box">
-          <div class="digit muted">10</div>
+          <div class="digit muted" id="limitTotal">10</div>
           <div class="lab">Лимит/день</div>
         </div>
       </div>
@@ -2935,6 +2935,132 @@
     }
   }
 
+  // ============ RPC FUNCTIONS (matchmaking, limits, achievements) ============
+
+  // Join search queue with user's tags
+  async function dbJoinQueue(){
+    if(!sb || !getTgId()) return false;
+    try{
+      const tagIds = (await dbGetUserTags()).map(t => t.id);
+      // Remove old entry if exists, then insert
+      await sb.from('search_queue').delete().eq('user_id', getTgId());
+      await sb.from('search_queue').insert({
+        user_id: getTgId(),
+        tags: tagIds,
+        joined_at: new Date().toISOString()
+      });
+      return true;
+    }catch(e){
+      console.warn('dbJoinQueue error:', e);
+      return false;
+    }
+  }
+
+  async function dbLeaveQueue(){
+    if(!sb || !getTgId()) return;
+    try{
+      await sb.from('search_queue').delete().eq('user_id', getTgId());
+    }catch(e){}
+  }
+
+  // Find a match via RPC
+  async function dbFindMatch(){
+    if(!sb || !getTgId()) return null;
+    try{
+      const { data, error } = await sb.rpc('find_match', { searcher_id: getTgId() });
+      if(error) throw error;
+      return data; // partner's tg_id or null
+    }catch(e){
+      console.warn('dbFindMatch error:', e);
+      return null;
+    }
+  }
+
+  // Reset daily limit if needed
+  async function dbResetDailyLimit(){
+    if(!sb || !getTgId()) return null;
+    try{
+      const { data, error } = await sb.rpc('reset_daily_limit', { user_id: getTgId() });
+      if(error) throw error;
+      return data;
+    }catch(e){
+      console.warn('dbResetDailyLimit error:', e);
+      return null;
+    }
+  }
+
+  // Increment daily used (returns updated user or null if limit reached)
+  async function dbIncrementDailyUsed(){
+    if(!sb || !getTgId()) return null;
+    try{
+      const { data, error } = await sb.rpc('increment_daily_used', { user_id: getTgId() });
+      if(error) throw error;
+      return data;
+    }catch(e){
+      console.warn('dbIncrementDailyUsed error:', e);
+      return null;
+    }
+  }
+
+  // Check and unlock achievements
+  async function dbCheckAchievements(){
+    if(!sb || !getTgId()) return [];
+    try{
+      const { data, error } = await sb.rpc('check_achievements', { user_id: getTgId() });
+      if(error) throw error;
+      return data || [];
+    }catch(e){
+      console.warn('dbCheckAchievements error:', e);
+      return [];
+    }
+  }
+
+  // Update streak on activity
+  async function dbUpdateStreak(){
+    if(!sb || !getTgId()) return;
+    try{
+      await sb.rpc('update_streak', { user_id: getTgId() });
+    }catch(e){}
+  }
+
+  // Check if user can start new chat (limit check)
+  async function dbCanStartChat(){
+    if(!sb || !getTgId()) return true; // demo mode — allow
+    const user = await dbResetDailyLimit();
+    if(!user) return true;
+    if(user.is_premium) return true;
+    return user.daily_used < user.daily_limit;
+  }
+
+  // Get remaining daily chats
+  async function dbGetRemainingChats(){
+    if(!sb || !getTgId()) return 10;
+    const user = await dbResetDailyLimit();
+    if(!user) return 10;
+    if(user.is_premium) return Infinity;
+    return Math.max(0, user.daily_limit - user.daily_used);
+  }
+
+  // Activate premium (called after Telegram Stars payment)
+  async function dbActivatePremium(days){
+    if(!sb || !getTgId()) return false;
+    try{
+      const until = new Date();
+      until.setDate(until.getDate() + days);
+      const { error } = await sb.from('users').update({
+        is_premium: true,
+        premium_until: until.toISOString()
+      }).eq('tg_id', getTgId());
+      if(error) throw error;
+      // Check achievements (will unlock 'premium')
+      await dbCheckAchievements();
+      return true;
+    }catch(e){
+      console.warn('dbActivatePremium error:', e);
+      return false;
+    }
+  }
+
   // ============ WHEEL GENERATION ============
   function buildWheel(targetId, sliceCount){
     const g = document.getElementById(targetId);
@@ -3165,10 +3291,22 @@
     }
   }
 
-  function startSearch(){
+  async function startSearch(){
     if(isSearching) return;
     isSearching = true;
     haptic('medium');
+
+    // Check daily limit first
+    const canStart = await dbCanStartChat();
+    if(!canStart){
+      isSearching = false;
+      showToast('лимит диалогов исчерпан', 'warn');
+      setTimeout(() => goTo('limit'), 1000);
+      return;
+    }
+
+    // Join search queue
+    await dbJoinQueue();
 
     const wheel = document.getElementById('searchWheelBtn');
     if(wheel){
@@ -3193,8 +3331,7 @@
         document.getElementById('searchCount').textContent = String(Math.min(i*2 + 2, 99)).padStart(2,'0');
       } else {
         clearInterval(searchTimer);
-        isSearching = false;
-        goTo('match');
+        finalizeMatch();
       }
     }, 1100);
 
@@ -3206,34 +3343,88 @@
     }, 800);
   }
 
+  // Try to find a real match via DB; fall back to demo mode
+  async function finalizeMatch(){
+    isSearching = false;
+    let partnerId = null;
+
+    // Try real matchmaking
+    if(sb && getTgId()){
+      partnerId = await dbFindMatch();
+    }
+
+    // Update match screen based on result
+    if(partnerId && partnerId !== 0){
+      // Real partner found — fetch partner info
+      const { data: partner } = await sb.from('users')
+        .select('nickname, gender, is_premium')
+        .eq('tg_id', partnerId).maybeSingle();
+      if(partner){
+        const nicknameEl = document.querySelector('.match-info .nickname');
+        if(nicknameEl) nicknameEl.innerHTML = `<span class="at">@</span>${partner.nickname}`;
+        const avEl = document.querySelector('.match-pair .av.them');
+        if(avEl) avEl.textContent = (partner.nickname || 'A').charAt(0).toUpperCase();
+        window._matchedPartnerId = partnerId;
+        window._matchedPartnerName = partner.nickname;
+      }
+    } else {
+      // No real match — use demo partner
+      window._matchedPartnerId = 0;
+      window._matchedPartnerName = 'Moonlight_07';
+    }
+
+    // Leave queue
+    await dbLeaveQueue();
+
+    goTo('match');
+  }
+
+
   // ============ CHAT ============
   // Active chat state
   let activeChatId = null;
   let activeChatPartnerId = null;
 
-  // Start a demo chat (after match) — creates a real chat record with demo partner id 0
+  // Start a chat after match — creates a real chat record
   async function startDemoChat(){
+    const partnerId = window._matchedPartnerId || 0;
+    const partnerName = window._matchedPartnerName || 'Moonlight_07';
+
+    // Increment daily used (will block if limit reached, but we checked before)
+    if(sb && getTgId() && partnerId !== 0){
+      const updated = await dbIncrementDailyUsed();
+      if(!updated){
+        showToast('лимит исчерпан', 'warn');
+        setTimeout(() => goTo('limit'), 1000);
+        return;
+      }
+    }
+
     if(sb && getTgId()){
-      // Create chat with partner_id = 0 (demo mode, no real second user)
-      const chat = await dbCreateChat(0);
+      const chat = await dbCreateChat(partnerId);
       if(chat){
         activeChatId = chat.id;
-        activeChatPartnerId = 0;
-        // Update partner name in chat header
+        activeChatPartnerId = partnerId;
         const nameEl = document.querySelector('.chat-partner-bar .name');
-        if(nameEl) nameEl.innerHTML = `<span class="at">@</span>Moonlight_07`;
+        if(nameEl) nameEl.innerHTML = `<span class="at">@</span>${partnerName}`;
         const avEl = document.querySelector('.chat-partner-bar .av');
-        if(avEl) avEl.textContent = 'M';
-        // Reset messages
+        if(avEl) avEl.textContent = (partnerName || 'A').charAt(0).toUpperCase();
         const msgs = document.getElementById('chatMessages');
         msgs.innerHTML = '<div class="msg time">сегодня</div>';
+        // Check achievements after creating chat
+        await dbCheckAchievements();
+        await dbUpdateStreak();
         goTo('chat');
         return;
       }
     }
-    // Fallback: just go to chat
+    // Fallback: just go to chat in demo mode
     activeChatId = null;
-    activeChatPartnerId = 'demo';
+    activeChatPartnerId = partnerId || 'demo';
+    const nameEl = document.querySelector('.chat-partner-bar .name');
+    if(nameEl) nameEl.innerHTML = `<span class="at">@</span>${partnerName}`;
+    const avEl = document.querySelector('.chat-partner-bar .av');
+    if(avEl) avEl.textContent = (partnerName || 'A').charAt(0).toUpperCase();
     goTo('chat');
   }
   async function sendMessage(){
@@ -3368,16 +3559,72 @@
     el.classList.add('selected');
     haptic('light');
   }
-  function buyPremium(){
+  // Premium prices mapping (in Telegram Stars)
+  const PREMIUM_PRICES = {
+    '1 мес': { stars: 199, days: 30 },
+    '3 мес': { stars: 499, days: 90 },
+    'Год':   { stars: 1499, days: 365 }
+  };
+
+  async function buyPremium(){
+    // Find selected plan
+    const selected = document.querySelector('.price-opt.selected .name');
+    const planName = selected?.textContent.trim() || '3 мес';
+    const plan = PREMIUM_PRICES[planName];
+    if(!plan){
+      showToast('выбери тариф', 'warn');
+      return;
+    }
+
+    // Try Telegram Stars invoice via bot API
+    // Note: requires invoice to be created server-side in production
+    // For MVP we simulate the payment flow
     showToast('оплата через Telegram Stars', 'warn');
-    setTimeout(() => showToast('Premium активирован!', 'success'), 1500);
+
+    if(tg?.openInvoice){
+      // Real Telegram Stars flow — would need invoice link from server
+      // tg.openInvoice(invoiceUrl, (status) => {...});
+      // For now simulate
+    }
+
+    setTimeout(async () => {
+      const ok = await dbActivatePremium(plan.days);
+      if(ok){
+        showToast('Premium активирован!', 'success');
+        haptic('success');
+        // Update UI — mark premium achievements
+        await dbCheckAchievements();
+        setTimeout(() => goTo('profile'), 1500);
+      } else {
+        showToast('ошибка активации', 'error');
+      }
+    }, 1500);
   }
-  function watchAd(){
+  async function watchAd(){
     showToast('загрузка рекламы 15 сек', 'warn');
-    setTimeout(() => {
+    setTimeout(async () => {
+      // Add 3 to daily_limit in DB
+      if(sb && getTgId()){
+        const user = await dbResetDailyLimit();
+        if(user){
+          await dbUpdateProfile({ daily_limit: (user.daily_limit || 10) + 3 });
+        }
+      }
       showToast('+3 диалога добавлено', 'success');
       setTimeout(() => goTo('search'), 800);
     }, 1600);
+  }
+
+  // Load limit info when entering limit screen
+  async function loadLimitInfo(){
+    if(!sb || !getTgId()) return;
+    const user = await dbResetDailyLimit();
+    if(user){
+      const remaining = user.is_premium ? '∞' : Math.max(0, user.daily_limit - user.daily_used);
+      const total = user.is_premium ? '∞' : user.daily_limit;
+      document.getElementById('limitRemaining').textContent = remaining;
+      document.getElementById('limitTotal').textContent = total;
+    }
   }
 
   // ============ TOAST ============
@@ -3574,8 +3821,100 @@
   goTo = function(name){
     originalGoTo(name);
     if(name === 'chats') loadChatsList();
+    if(name === 'limit') loadLimitInfo();
+    if(name === 'profile') loadProfileStats();
+    if(name === 'welcome') loadHomeStats();
     if(name !== 'chat') unsubscribeChat();
+    // Update streak on any navigation
+    if(name === 'welcome' || name === 'search') dbUpdateStreak();
   };
+
+  // Load real stats for home screen
+  async function loadHomeStats(){
+    if(!sb || !getTgId()) return;
+    const stats = await dbGetStats();
+    if(!stats) return;
+    const el1 = document.getElementById('homeStatChats');
+    const el2 = document.getElementById('homeStatMatches');
+    const el3 = document.getElementById('homeStatStreak');
+    if(el1) el1.textContent = stats.total_chats || 0;
+    if(el2) el2.textContent = stats.active_chats || 0;
+    if(el3) el3.textContent = stats.streak_days || 0;
+    const streakText = document.getElementById('homeStreakText');
+    if(streakText) streakText.textContent = (stats.streak_days || 0) + ' дней подряд!';
+
+    // Load remaining limit
+    const remaining = await dbGetRemainingChats();
+    const limitText = document.getElementById('homeLimitText');
+    if(limitText){
+      limitText.textContent = (remaining === Infinity ? '∞' : remaining) + ' осталось';
+    }
+  }
+
+  // Load real stats from DB into profile screen
+  async function loadProfileStats(){
+    if(!sb || !getTgId()) return;
+    const stats = await dbGetStats();
+    if(!stats) return;
+
+    // Update streak
+    const streakVal = document.querySelector('.streak-card .sval');
+    if(streakVal) streakVal.textContent = (stats.streak_days || 0) + ' дней';
+
+    // Update stat cards
+    const cards = document.querySelectorAll('.stat-card .sval');
+    if(cards.length >= 4){
+      cards[0].textContent = stats.total_chats || 0;
+      // matches approximated as active chats
+      cards[1].textContent = stats.active_chats || 0;
+      // hours approximated from messages
+      const hours = Math.floor((stats.messages_sent || 0) / 10);
+      cards[2].textContent = hours + 'ч';
+      // match rate
+      const rate = stats.total_chats > 0 ? Math.min(99, Math.round((stats.active_chats / stats.total_chats) * 100)) : 0;
+      cards[3].textContent = rate + '%';
+    }
+
+    // Load achievements
+    const achievements = await dbGetAchievements();
+    const achGrid = document.querySelector('.achievements');
+    if(achGrid){
+      const allAch = [
+        { code:'streak_7', name:'7 дней', emoji:'🔥' },
+        { code:'chats_100', name:'100 чатов', emoji:'🏆' },
+        { code:'matches_30', name:'30 матчей', emoji:'💕' },
+        { code:'premium', name:'Premium', emoji:'👑' },
+        { code:'days_30', name:'30 дней', emoji:'🛡️' },
+        { code:'spin_500', name:'500 спинов', emoji:'🎯' },
+        { code:'chats_50', name:'50 чатов', emoji:'⚡' },
+        { code:'legend', name:'Легенда', emoji:'🔔' }
+      ];
+      const unlockedCodes = achievements.map(a => a.code);
+      // Also check via RPC to auto-unlock
+      const autoCheck = await dbCheckAchievements();
+      autoCheck.forEach(a => {
+        if(a.just_unlocked){
+          showToast('достижение: ' + a.name, 'success');
+        }
+        if(!unlockedCodes.includes(a.code)) unlockedCodes.push(a.code);
+      });
+
+      achGrid.innerHTML = '';
+      allAch.forEach(a => {
+        const unlocked = unlockedCodes.includes(a.code);
+        const el = document.createElement('div');
+        el.className = 'ach' + (unlocked ? ' unlocked' : ' locked');
+        el.innerHTML = `<div class="ai">${a.emoji}</div><div class="an">${a.name}</div>`;
+        achGrid.appendChild(el);
+      });
+    }
+
+    // Update premium badge in profile meta
+    const meta = document.querySelector('.profile-header .pmeta');
+    if(meta){
+      meta.textContent = (stats.nickname || 'Анонимус') + ' · ' + (stats.gender || 'other').toUpperCase() + (stats.is_premium ? ' · PREMIUM' : '');
+    }
+  }
 
   // Show onboarding on first visit, home on subsequent
   try{
