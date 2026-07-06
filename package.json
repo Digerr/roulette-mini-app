@@ -1,0 +1,12 @@
+{
+  "name": "roulette-mini-app",
+  "version": "1.0.0",
+  "description": "Gamified Anonymous Chat Roulette Telegram Mini App",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  },
+  "keywords": ["telegram", "mini-app", "chat-roulette"],
+  "author": "roulette",
+  "license": "MIT"
+}
