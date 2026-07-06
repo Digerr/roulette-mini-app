@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Roulza</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/roulza-icon.png">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -98,7 +100,58 @@
     -webkit-tap-highlight-color: transparent;
   }
   .tg-header .back:active{ transform: scale(0.92); }
-  .tg-header .back.hidden{ visibility: hidden; }
+  .tg-header .back.hidden{ display: none; }
+
+  /* Live animated logo in header */
+  .tg-logo{
+    width: 32px; height: 32px;
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .tg-logo.hidden{ display: none; }
+  .tg-logo svg{ width: 100%; height: 100%; }
+  .tg-logo .logo-wheel{
+    transform-origin: 50% 50%;
+    animation: logoSpin 8s linear infinite;
+  }
+  .tg-logo .logo-pointer{
+    transform-origin: 50% 50%;
+    animation: logoPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes logoSpin{
+    to{ transform: rotate(360deg); }
+  }
+  @keyframes logoPulse{
+    0%,100%{ transform: scale(1); opacity: 1; }
+    50%{ transform: scale(1.15); opacity: 0.7; }
+  }
+  .tg-logo:active{ transform: scale(0.92); }
+
+  /* Larger logo for onboarding */
+  .onb-logo{
+    width: 120px; height: 120px;
+    margin-bottom: 20px;
+  }
+  .onb-logo .logo-wheel{ animation: logoSpin 6s linear infinite; }
+  .onb-logo .logo-pointer{ animation: logoPulse 1.4s ease-in-out infinite; }
+  .onb-logo .logo-glow{
+    animation: logoGlow 2s ease-in-out infinite;
+  }
+  @keyframes logoGlow{
+    0%,100%{ opacity: 0.4; r: 50; }
+    50%{ opacity: 0.7; r: 58; }
+  }
+
+  /* Logo for home spin card */
+  .home-logo{
+    width: 80px; height: 80px;
+  }
+  .home-logo .logo-wheel{ animation: logoSpin 5s linear infinite; }
+  .home-logo .logo-pointer{ animation: logoPulse 1.2s ease-in-out infinite; }
   .tg-header .back svg{ width: 20px; height: 20px; }
   .tg-header .title{
     flex:1; min-width:0;
@@ -1787,6 +1840,30 @@
     <div class="back hidden" id="backBtn" onclick="goBack()">
       <svg><use href="#i-back"/></svg>
     </div>
+    <div class="tg-logo" id="headerLogo" onclick="goTo('welcome')">
+      <svg viewBox="0 0 100 100">
+        <!-- glow -->
+        <circle cx="50" cy="50" r="46" fill="#e5342b" opacity="0.15"/>
+        <!-- outer ring -->
+        <circle cx="50" cy="50" r="44" fill="none" stroke="#f5f1e8" stroke-width="2" opacity="0.3"/>
+        <!-- spinning wheel (6 sectors) -->
+        <g class="logo-wheel">
+          <path d="M50,50 L50,8 A42,42 0 0,1 86.37,29 Z" fill="#e5342b"/>
+          <path d="M50,50 L86.37,29 A42,42 0 0,1 86.37,71 Z" fill="#2a201a"/>
+          <path d="M50,50 L86.37,71 A42,42 0 0,1 50,92 Z" fill="#e5342b"/>
+          <path d="M50,50 L50,92 A42,42 0 0,1 13.63,71 Z" fill="#2a201a"/>
+          <path d="M50,50 L13.63,71 A42,42 0 0,1 13.63,29 Z" fill="#e5342b"/>
+          <path d="M50,50 L13.63,29 A42,42 0 0,1 50,8 Z" fill="#2a201a"/>
+        </g>
+        <!-- center -->
+        <circle cx="50" cy="50" r="12" fill="#1a1410" stroke="#f5f1e8" stroke-width="2"/>
+        <text x="50" y="55" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="14" font-weight="700" fill="#e5342b">R</text>
+        <!-- pulsing pointer -->
+        <g class="logo-pointer">
+          <path d="M50,2 L44,12 L56,12 Z" fill="#ffd600"/>
+        </g>
+      </svg>
+    </div>
     <div class="title">
       <span id="headerTitle">Roulza</span>
       <span class="sub" id="headerSub"></span>
@@ -1807,13 +1884,29 @@
     <div class="screen onboarding active" data-screen="onboarding">
       <div class="onb-track" id="onbTrack" data-step="1">
         <div class="onb-slide">
-          <div class="onb-illust">
-            <svg class="wheel-mini" viewBox="0 0 200 200">
-              <g transform="translate(100,100)">
-                <g id="onbWheel1"></g>
-                <circle cx="0" cy="0" r="90" fill="none" stroke="#5a4636" stroke-width="2"/>
-                <circle cx="0" cy="0" r="22" fill="#2a201a" stroke="#f5f1e8" stroke-width="1.5"/>
-                <text x="0" y="5" text-anchor="middle" font-family="JetBrains Mono" font-size="14" font-weight="700" fill="#e5342b">R</text>
+          <div class="onb-logo">
+            <svg viewBox="0 0 100 100">
+              <!-- glow -->
+              <circle class="logo-glow" cx="50" cy="50" r="50" fill="#e5342b" opacity="0.4"/>
+              <!-- outer ring -->
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#f5f1e8" stroke-width="1.5" opacity="0.3"/>
+              <!-- spinning wheel (8 sectors) -->
+              <g class="logo-wheel">
+                <path d="M50,50 L50,6 A44,44 0 0,1 81.11,18.89 Z" fill="#e5342b"/>
+                <path d="M50,50 L81.11,18.89 A44,44 0 0,1 94,50 Z" fill="#2a201a"/>
+                <path d="M50,50 L94,50 A44,44 0 0,1 81.11,81.11 Z" fill="#e5342b"/>
+                <path d="M50,50 L81.11,81.11 A44,44 0 0,1 50,94 Z" fill="#2a201a"/>
+                <path d="M50,50 L50,94 A44,44 0 0,1 18.89,81.11 Z" fill="#e5342b"/>
+                <path d="M50,50 L18.89,81.11 A44,44 0 0,1 6,50 Z" fill="#2a201a"/>
+                <path d="M50,50 L6,50 A44,44 0 0,1 18.89,18.89 Z" fill="#e5342b"/>
+                <path d="M50,50 L18.89,18.89 A44,44 0 0,1 50,6 Z" fill="#2a201a"/>
+              </g>
+              <!-- center -->
+              <circle cx="50" cy="50" r="14" fill="#1a1410" stroke="#f5f1e8" stroke-width="2"/>
+              <text x="50" y="56" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="18" font-weight="700" fill="#e5342b">R</text>
+              <!-- pulsing pointer -->
+              <g class="logo-pointer">
+                <path d="M50,0 L42,12 L58,12 Z" fill="#ffd600" stroke="#1a1410" stroke-width="1"/>
               </g>
             </svg>
           </div>
@@ -3221,8 +3314,10 @@
     });
 
     const backBtn = document.getElementById('backBtn');
+    const headerLogo = document.getElementById('headerLogo');
     const showBack = name !== 'onboarding' && name !== 'welcome' && name !== 'chats';
     backBtn.classList.toggle('hidden', !showBack);
+    if(headerLogo) headerLogo.classList.toggle('hidden', showBack);
 
     if(!history.includes(name)) history.push(name);
     else history = history.slice(0, history.indexOf(name)+1);
