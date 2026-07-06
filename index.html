@@ -1274,11 +1274,11 @@
   }
   .premium-hero{
     border: 2px solid var(--gold);
-    padding: 28px 16px;
+    padding: 32px 16px 28px;
     text-align:center;
     margin-bottom: 20px;
     border-radius: 22px;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
     background:
       radial-gradient(circle at 30% 30%, var(--gold-tint), transparent 60%),
@@ -1286,15 +1286,18 @@
       var(--surface);
   }
   .premium-hero .crown{
-    width: 56px; height: 56px;
-    margin: 0 auto 14px; display: block;
-    background: var(--gold); padding: 14px;
-    border-radius: 18px;
+    width: 64px; height: 64px;
+    margin: 0 auto 16px; display: block;
+    background: var(--gold);
+    padding: 16px;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(255,214,0,0.3);
     animation: crownFloat 3s ease-in-out infinite;
+    transform-origin: center center;
   }
   @keyframes crownFloat{
-    0%,100%{ transform: translateY(0) rotate(-3deg); }
-    50%{ transform: translateY(-6px) rotate(3deg); }
+    0%,100%{ transform: translateY(0) rotate(-5deg); }
+    50%{ transform: translateY(-4px) rotate(5deg); }
   }
   .premium-hero h1{
     font-size: 32px; font-weight: 700;
@@ -2262,20 +2265,11 @@
         <div class="sb-meta">FREE</div>
       </div>
 
-      <div class="option-row" id="watchAdRow" onclick="watchAd()">
-        <div class="or-ico"><svg><use href="#i-play"/></svg></div>
-        <div class="or-body">
-          <div class="or-t">Посмотреть рекламу</div>
-          <div class="or-d"><b>+3</b> диалога · 15 сек</div>
-        </div>
-        <div class="or-arrow">→</div>
-      </div>
-
-      <div class="option-row" onclick="showToast('приглашение отправлено +1', 'success')">
+      <div class="option-row" onclick="inviteFriend()">
         <div class="or-ico"><svg><use href="#i-share"/></svg></div>
         <div class="or-body">
           <div class="or-t">Пригласить друга</div>
-          <div class="or-d"><b>+1</b> диалог за каждого друга</div>
+          <div class="or-d"><b>+2</b> диалога за каждого друга</div>
         </div>
         <div class="or-arrow">→</div>
       </div>
@@ -2298,6 +2292,11 @@
             <li>Поиск строго по твоему городу</li>
             <li>Уникальный цвет ника в чате</li>
             <li>Приоритет в очереди поиска</li>
+            <li>Просмотр профилей собеседников</li>
+            <li>Расширенный список интересов (20+ тегов)</li>
+            <li>Статистика собеседника (возраст, пол, город)</li>
+            <li>Приватные заметки о собеседниках</li>
+            <li>Эксклюзивный бейдж Premium в профиле</li>
           </ul>
 
           <div class="price-row">
@@ -2426,13 +2425,17 @@
               <div id="premiumUntil" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); margin-top:2px;">—</div>
             </div>
           </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px; color:var(--ink-dim); margin-bottom: 12px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px; color:var(--ink-dim); margin-bottom: 12px;">
             <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Безлимит чатов</div>
             <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Фильтр по полу</div>
             <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Поиск по городу</div>
             <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Цвет ника</div>
             <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Приоритет в очереди</div>
-            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Без рекламы</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Профили собеседников</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Расширенные теги</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Статистика собеседника</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Заметки о людях</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Бейдж Premium</div>
           </div>
           <button class="btn btn-ghost" style="width:100%; font-size:12px; padding:10px;" onclick="goTo('premium-settings')">
             Настройки Premium →
@@ -2510,7 +2513,9 @@
         <div style="margin-top: 20px;">
           <button class="btn btn-ghost" onclick="goTo('setup')">Редактировать профиль →</button>
         </div>
+        <button class="btn-text" onclick="goTo('faq')">FAQ — частые вопросы →</button>
         <button class="btn-text" onclick="goTo('premium')">управление Premium →</button>
+        <button class="btn-text" onclick="inviteFriend()">пригласить друга →</button>
         <button class="btn-text" onclick="resetProfile()" style="color: var(--red); margin-top: 8px;">сбросить профиль</button>
       </div>
     </div>
@@ -2652,6 +2657,84 @@
       <div class="chats-list" id="chatsListContainer">
         <!-- chats loaded dynamically by loadChatsList() -->
       </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="screen premium-screen" data-screen="faq" style="padding: 20px 20px 28px;">
+      <div class="premium-hero" style="padding: 20px 16px; margin-bottom: 16px;">
+        <h1 style="font-size: 26px; margin: 0;">FAQ <span class="gold">Roulza</span></h1>
+        <p style="margin-top: 6px;">Частые вопросы о приложении</p>
+      </div>
+
+      <div class="section-bar gold"><div class="sb-num">01</div><div class="sb-title">Основное</div><div class="sb-meta">5 вопросов</div></div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Что такое Roulza?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">Анонимная чат-рулетка внутри Telegram. Крутишь колесо — получаешь случайного собеседника с общими интересами. Никаких фото, номеров и привязок.</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Как найти собеседника?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">1) Заполни профиль и выбери 3-5 тегов интересов. 2) Жми колесо на вкладке SPIN. 3) Дождись совпадения — мы найдём кого-то с пересекающимися интересами.</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Это анонимно?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">Да. Виден только твой никнейм и аватар (буква). Без Telegram ID, без фото, без номера. Закрыл диалог — и следа не осталось.</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Сколько диалогов в день?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">Бесплатно: 10 диалогов в день. Premium — безлимит. За приглашение друга: +2 диалога вам и другу.</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Как пожаловаться на собеседника?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">В чате нажми иконку флага в правом верхнем углу. Выбери причину — модерация проверит в течение 24 часов.</div>
+      </div>
+
+      <div class="section-bar gold"><div class="sb-num">02</div><div class="sb-title">Premium</div><div class="sb-meta">5 вопросов</div></div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Что входит в Premium?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">10 фишек: безлимит чатов, фильтр по полу, поиск по городу, 8 цветов ника, приоритет в очереди, просмотр профилей собеседников, расширенные теги (20+), статистика собеседника, приватные заметки, эксклюзивный бейдж.</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Сколько стоит Premium?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">3 тарифа: 1 месяц — 199 звёзд, 3 месяца — 499 звёзд (−16%), 1 год — 1499 звёзд (−37%). Оплата через Telegram Stars.</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Как оплатить Premium?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">На вкладке PRO выбери тариф → «Купить за Звёзды». Откроется нативный Telegram-диалог оплаты звёздами. После оплаты Premium активируется автоматически.</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Где хранятся мои звёзды после оплаты?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">Звёзды поступают на баланс бота в Telegram. Их можно вывести через Fragment на TON-кошелёк (комиссия ~30% Telegram).</div>
+      </div>
+      <div style="background:var(--surface); border:2px solid var(--red); border-radius:14px; padding:14px; margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px; color:var(--red);">Возврат средств</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;"><b style="color:var(--red);">Возврат средств не предусмотрен.</b> Оплата Premium окончательная. Перед покупкой убедись, что функционал тебе подходит — все фишки описаны в FAQ и на экране PRO. Premium активируется мгновенно после оплаты и действует указанный срок.</div>
+      </div>
+
+      <div class="section-bar gold"><div class="sb-num">03</div><div class="sb-title">Приглашения</div><div class="sb-meta">3 вопроса</div></div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Как пригласить друга?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">На экране лимитов (или через профиль) нажми «Пригласить друга». Откроется меню поделиться Telegram — выбери чат или друга. Друг получит ссылку на бота.</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Что за бонус за приглашение?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">Когда друг впервые откроет Roulza по твоей ссылке — вы оба получите +2 диалога к дневному лимиту. Бонус суммируется.</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Есть ли лимит приглашений?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">Нет. Приглашай сколько хочешь — каждый зашедший друг даёт +2 диалога. Идеально для тех, кто превысил дневный лимит.</div>
+      </div>
+
+      <div class="section-bar gold"><div class="sb-num">04</div><div class="sb-title">Безопасность</div><div class="sb-meta">2 вопроса</div></div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Что делать с нарушителями?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">Жалуйся через иконку флага в чате. Ложные жалобы ведут к блокировке твоего аккаунта. Жалуйся только по реальным причинам.</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--line-2); border-radius:14px; padding:14px; margin-bottom:16px;">
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Мои данные в безопасности?</div>
+        <div style="font-size:13px; color:var(--ink-dim); line-height:1.5;">Мы храним только твой Telegram ID, никнейм и выбранные интересы. Никаких фото, номеров или личных переписок после завершения диалога.</div>
+      </div>
+
+      <button class="btn-text" onclick="goBack()">← назад</button>
     </div>
 
   </div>
@@ -3200,12 +3283,13 @@
     limit: { t: 'Лимиты', s: 'исчерпаны' },
     premium: { t: 'Premium', s: 'подписка' },
     'premium-settings': { t: 'Premium', s: 'настройки' },
+    faq: { t: 'FAQ', s: 'помощь' },
     profile: { t: 'Профиль', s: 'мой' },
     report: { t: 'Жалоба', s: 'безопасность' },
     chats: { t: 'Чаты', s: 'история' }
   };
 
-  const backableScreens = ['setup', 'match', 'chat', 'limit', 'report', 'premium', 'premium-settings'];
+  const backableScreens = ['setup', 'match', 'chat', 'limit', 'report', 'premium', 'premium-settings', 'faq'];
 
   function goTo(name){
     if(isAnimating) return;
@@ -3741,19 +3825,60 @@
       showToast('открой ссылку в Telegram для оплаты', 'warn');
     }
   }
-  async function watchAd(){
-    showToast('загрузка рекламы 15 сек', 'warn');
-    setTimeout(async () => {
-      // Add 3 to daily_limit in DB
-      if(sb && getTgId()){
-        const user = await dbResetDailyLimit();
-        if(user){
-          await dbUpdateProfile({ daily_limit: (user.daily_limit || 10) + 3 });
-        }
+  // Invite friend — share referral link, +2 dialogs when friend joins
+  async function inviteFriend(){
+    const tgId = getTgId();
+    if(!tgId){
+      showToast('нужен вход через Telegram', 'warn');
+      return;
+    }
+    const refLink = `https://t.me/RoulzaBot?start=ref_${tgId}`;
+    const shareText = `🎲 Зайди в Roulza — анонимную чат-рулетку в Telegram. Крути колесо, находи собеседников по интересам. Жми: ${refLink}`;
+
+    // Try Telegram share
+    if(tg?.openTelegramLink){
+      tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`);
+      haptic('light');
+    } else if(navigator.share){
+      try{
+        await navigator.share({ title: 'Roulza', text: shareText, url: refLink });
+        haptic('light');
+      }catch(e){}
+    } else {
+      // Fallback — copy to clipboard
+      try{
+        await navigator.clipboard.writeText(shareText);
+        showToast('ссылка скопирована', 'success');
+      }catch(e){
+        showToast(refLink, 'success');
       }
-      showToast('+3 диалога добавлено', 'success');
-      setTimeout(() => goTo('search'), 800);
-    }, 1600);
+    }
+  }
+
+  // Check referral on start
+  async function checkReferral(){
+    const startParam = tg?.initDataUnsafe?.start_param;
+    if(!startParam || !startParam.startsWith('ref_')) return;
+    const referrerId = parseInt(startParam.replace('ref_', ''));
+    const myId = getTgId();
+    if(!referrerId || referrerId === myId) return;
+    try{
+      // Check if this referral already processed
+      const key = 'roulette_ref_' + referrerId;
+      if(localStorage.getItem(key)) return;
+      localStorage.setItem(key, '1');
+      // Give referrer +2 daily_limit
+      const { data: refUser } = await sb.from('users').select('daily_limit').eq('tg_id', referrerId).maybeSingle();
+      if(refUser){
+        await sb.from('users').update({ daily_limit: (refUser.daily_limit || 10) + 2 }).eq('tg_id', referrerId);
+      }
+      // Give yourself +2 as welcome bonus
+      const me = await dbResetDailyLimit();
+      if(me && !me.is_premium){
+        await dbUpdateProfile({ daily_limit: (me.daily_limit || 10) + 2 });
+      }
+      showToast('+2 диалога за приглашение!', 'success');
+    }catch(e){}
   }
 
   // Load limit info when entering limit screen
@@ -3765,9 +3890,6 @@
       const total = user.is_premium ? '∞' : user.daily_limit;
       document.getElementById('limitRemaining').textContent = remaining;
       document.getElementById('limitTotal').textContent = total;
-      // Hide "watch ad" option for premium users
-      const adRow = document.getElementById('watchAdRow');
-      if(adRow) adRow.style.display = user.is_premium ? 'none' : 'flex';
     }
   }
 
@@ -3885,6 +4007,8 @@
     }
     // Load tags async (don't block UI)
     loadTags();
+    // Check referral on start
+    checkReferral();
   })();
 
   // Load chats list when entering chats screen
