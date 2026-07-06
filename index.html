@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ChatRoulette</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -1994,24 +1995,13 @@
           <h3>Интересы</h3>
           <div class="count">ВЫБРАНО <b id="tagCount">3</b>/5</div>
         </div>
-        <div class="tags">
-          <div class="tag selected" onclick="toggleTag(this)"><span class="dot"></span>Игры</div>
-          <div class="tag" onclick="toggleTag(this)"><span class="dot"></span>Музыка</div>
-          <div class="tag selected" onclick="toggleTag(this)"><span class="dot"></span>Кино</div>
-          <div class="tag" onclick="toggleTag(this)"><span class="dot"></span>Спорт</div>
-          <div class="tag selected" onclick="toggleTag(this)"><span class="dot"></span>Книги</div>
-          <div class="tag" onclick="toggleTag(this)"><span class="dot"></span>Путешествия</div>
-          <div class="tag" onclick="toggleTag(this)"><span class="dot"></span>Еда</div>
-          <div class="tag" onclick="toggleTag(this)"><span class="dot"></span>IT</div>
-          <div class="tag" onclick="toggleTag(this)"><span class="dot"></span>Арт</div>
-          <div class="tag" onclick="toggleTag(this)"><span class="dot"></span>Животные</div>
-          <div class="tag" onclick="toggleTag(this)"><span class="dot"></span>Рок</div>
-          <div class="tag" onclick="toggleTag(this)"><span class="dot"></span>Астрология</div>
+        <div class="tags" id="tagsContainer">
+          <div class="label" style="width:100%; text-align:center; padding: 20px;">Загрузка тегов…</div>
         </div>
       </div>
 
       <div class="setup-cta">
-        <button class="btn" onclick="goTo('search')">
+        <button class="btn" onclick="saveProfileAndSearch()">
           НАЙТИ СОБЕСЕДНИКА <svg width="14" height="14"><use href="#i-arrow-right"/></svg>
         </button>
       </div>
@@ -2095,7 +2085,7 @@
       </div>
 
       <div class="match-cta">
-        <button class="btn" onclick="goTo('chat')">
+        <button class="btn" onclick="startDemoChat()">
           ЧАТ <svg width="14" height="14"><use href="#i-arrow-right"/></svg>
         </button>
         <button class="btn btn-ghost" onclick="goTo('search')">ДАЛЕЕ</button>
@@ -2610,6 +2600,13 @@
 </div>
 
 <script>
+  // ============ SUPABASE INIT ============
+  const SUPABASE_URL = 'https://otaoqqbtawedvimbirzn.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_sj5BCNByv5jL8uS_FpI6Ag_q8SklQTR';
+  const sb = window.supabase?.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+
   // ============ TELEGRAM WEBAPP INIT ============
   const tg = window.Telegram?.WebApp;
 
@@ -2680,6 +2677,262 @@
   function getInitial(){
     const name = getDisplayName();
     return name.charAt(0).toUpperCase();
+  }
+  function getTgId(){
+    return tgUser?.id || 0;
+  }
+
+  // ============ DATABASE LAYER (Supabase) ============
+  let currentUser = null; // cached user row from DB
+
+  async function dbEnsureUser(){
+    if(!sb) return null;
+    const tgId = getTgId();
+    if(!tgId) return null;
+    try{
+      // Try to fetch existing user
+      let { data, error } = await sb.from('users').select('*').eq('tg_id', tgId).maybeSingle();
+      if(error && error.code !== 'PGRST116') throw error;
+      if(!data){
+        // Create new user
+        const insertData = {
+          tg_id: tgId,
+          username: tgUser?.username || null,
+          first_name: tgUser?.first_name || null,
+          last_name: tgUser?.last_name || null,
+          nickname: getDisplayName(),
+          last_active: new Date().toISOString().slice(0,10)
+        };
+        const { data: inserted, error: insErr } = await sb.from('users').insert(insertData).select().single();
+        if(insErr) throw insErr;
+        data = inserted;
+      } else {
+        // Update last_active
+        await sb.from('users').update({
+          last_active: new Date().toISOString().slice(0,10),
+          username: tgUser?.username || data.username,
+          first_name: tgUser?.first_name || data.first_name
+        }).eq('tg_id', tgId);
+      }
+      currentUser = data;
+      return data;
+    }catch(e){
+      console.warn('dbEnsureUser error:', e);
+      return null;
+    }
+  }
+
+  async function dbUpdateProfile(updates){
+    if(!sb || !getTgId()) return null;
+    try{
+      const { data, error } = await sb.from('users').update(updates).eq('tg_id', getTgId()).select().single();
+      if(error) throw error;
+      currentUser = data;
+      return data;
+    }catch(e){
+      console.warn('dbUpdateProfile error:', e);
+      return null;
+    }
+  }
+
+  async function dbGetTags(){
+    if(!sb) return [];
+    try{
+      const { data, error } = await sb.from('tags').select('*').order('name');
+      if(error) throw error;
+      return data || [];
+    }catch(e){
+      console.warn('dbGetTags error:', e);
+      return [];
+    }
+  }
+
+  async function dbGetUserTags(){
+    if(!sb || !getTgId()) return [];
+    try{
+      const { data, error } = await sb.from('user_tags')
+        .select('tag_id, tags(name, emoji)')
+        .eq('user_id', getTgId());
+      if(error) throw error;
+      return (data || []).map(r => ({ id: r.tag_id, name: r.tags?.name, emoji: r.tags?.emoji }));
+    }catch(e){
+      console.warn('dbGetUserTags error:', e);
+      return [];
+    }
+  }
+
+  async function dbSetUserTags(tagIds){
+    if(!sb || !getTgId()) return;
+    try{
+      // Remove existing
+      await sb.from('user_tags').delete().eq('user_id', getTgId());
+      // Insert new
+      if(tagIds.length){
+        const rows = tagIds.map(id => ({ user_id: getTgId(), tag_id: id }));
+        await sb.from('user_tags').insert(rows);
+      }
+    }catch(e){
+      console.warn('dbSetUserTags error:', e);
+    }
+  }
+
+  async function dbGetChats(){
+    if(!sb || !getTgId()) return [];
+    try{
+      const tgId = getTgId();
+      const { data, error } = await sb.from('chats')
+        .select(`
+          id, status, pinned, started_at, ended_at, last_msg_at, last_msg_text,
+          user1_id, user2_id
+        `)
+        .or(`user1_id.eq.${tgId},user2_id.eq.${tgId}`)
+        .order('last_msg_at', { ascending: false, nullsFirst: false });
+      if(error) throw error;
+      // Get partner info for each chat
+      const chats = [];
+      for(const c of (data || [])){
+        const partnerId = c.user1_id === tgId ? c.user2_id : c.user1_id;
+        const { data: partner } = await sb.from('users').select('nickname, is_premium').eq('tg_id', partnerId).maybeSingle();
+        chats.push({
+          id: c.id,
+          status: c.status,
+          pinned: c.pinned,
+          started_at: c.started_at,
+          ended_at: c.ended_at,
+          last_msg_at: c.last_msg_at,
+          last_msg_text: c.last_msg_text,
+          partner_id: partnerId,
+          partner_name: partner?.nickname || 'Аноним',
+          partner_premium: partner?.is_premium || false
+        });
+      }
+      return chats;
+    }catch(e){
+      console.warn('dbGetChats error:', e);
+      return [];
+    }
+  }
+
+  async function dbGetMessages(chatId){
+    if(!sb) return [];
+    try{
+      const { data, error } = await sb.from('messages')
+        .select('*')
+        .eq('chat_id', chatId)
+        .order('created_at', { ascending: true });
+      if(error) throw error;
+      return data || [];
+    }catch(e){
+      console.warn('dbGetMessages error:', e);
+      return [];
+    }
+  }
+
+  async function dbSendMessage(chatId, text){
+    if(!sb || !getTgId()) return null;
+    try{
+      const { data, error } = await sb.from('messages')
+        .insert({ chat_id: chatId, sender_id: getTgId(), text })
+        .select().single();
+      if(error) throw error;
+      // Update chat last_msg
+      await sb.from('chats').update({
+        last_msg_at: new Date().toISOString(),
+        last_msg_text: text
+      }).eq('id', chatId);
+      return data;
+    }catch(e){
+      console.warn('dbSendMessage error:', e);
+      return null;
+    }
+  }
+
+  async function dbCreateChat(partnerId){
+    if(!sb || !getTgId()) return null;
+    try{
+      const { data, error } = await sb.from('chats')
+        .insert({ user1_id: getTgId(), user2_id: partnerId, status: 'active' })
+        .select().single();
+      if(error) throw error;
+      return data;
+    }catch(e){
+      console.warn('dbCreateChat error:', e);
+      return null;
+    }
+  }
+
+  async function dbSubmitReport(reportedId, reason, comment, chatId){
+    if(!sb || !getTgId()) return null;
+    try{
+      const { data, error } = await sb.from('reports').insert({
+        reporter_id: getTgId(),
+        reported_id: reportedId,
+        chat_id: chatId || null,
+        reason,
+        comment
+      }).select().single();
+      if(error) throw error;
+      return data;
+    }catch(e){
+      console.warn('dbSubmitReport error:', e);
+      return null;
+    }
+  }
+
+  async function dbGetStats(){
+    if(!sb || !getTgId()) return null;
+    try{
+      const { data, error } = await sb.from('user_stats').select('*').eq('tg_id', getTgId()).maybeSingle();
+      if(error) throw error;
+      return data;
+    }catch(e){
+      console.warn('dbGetStats error:', e);
+      return null;
+    }
+  }
+
+  async function dbGetAchievements(){
+    if(!sb) return [];
+    try{
+      const { data, error } = await sb.from('user_achievements')
+        .select('achievement_id, achievements(code, name, emoji)')
+        .eq('user_id', getTgId());
+      if(error) throw error;
+      return (data || []).map(r => ({
+        id: r.achievement_id,
+        code: r.achievements?.code,
+        name: r.achievements?.name,
+        emoji: r.achievements?.emoji
+      }));
+    }catch(e){
+      console.warn('dbGetAchievements error:', e);
+      return [];
+    }
+  }
+
+  // Realtime subscription for chat messages
+  let messageSubscription = null;
+  function subscribeToChat(chatId, onMessage){
+    if(!sb) return;
+    if(messageSubscription){
+      sb.removeChannel(messageSubscription);
+    }
+    messageSubscription = sb.channel('messages-' + chatId)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: 'chat_id=eq.' + chatId
+      }, payload => {
+        onMessage(payload.new);
+      })
+      .subscribe();
+  }
+  function unsubscribeChat(){
+    if(messageSubscription && sb){
+      sb.removeChannel(messageSubscription);
+      messageSubscription = null;
+    }
   }
 
   // ============ WHEEL GENERATION ============
@@ -2810,10 +3063,80 @@
     haptic('light');
   }
   function toggleTag(el){
+    // Limit to 5 selected
+    if(!el.classList.contains('selected') && document.querySelectorAll('.tag.selected').length >= 5){
+      showToast('максимум 5 тегов', 'warn');
+      return;
+    }
     el.classList.toggle('selected');
     const selected = document.querySelectorAll('.tag.selected').length;
     document.getElementById('tagCount').textContent = selected;
     haptic('light');
+  }
+
+  // Selected gender value
+  function getSelectedGender(){
+    const sel = document.querySelector('.gender-opt.selected');
+    if(!sel) return 'other';
+    const lab = sel.querySelector('.lab')?.textContent.toLowerCase();
+    if(lab === 'male') return 'male';
+    if(lab === 'female') return 'female';
+    return 'other';
+  }
+
+  // Render tags dynamically from DB
+  let allTags = [];
+  async function loadTags(){
+    allTags = await dbGetTags();
+    const userTags = await dbGetUserTags();
+    const userTagIds = userTags.map(t => t.id);
+    const container = document.getElementById('tagsContainer');
+    if(!container) return;
+    if(!allTags.length){
+      container.innerHTML = '<div class="label" style="width:100%; text-align:center; padding: 20px;">Не удалось загрузить теги</div>';
+      return;
+    }
+    container.innerHTML = '';
+    allTags.forEach(tag => {
+      const el = document.createElement('div');
+      el.className = 'tag' + (userTagIds.includes(tag.id) ? ' selected' : '');
+      el.dataset.tagId = tag.id;
+      el.onclick = () => toggleTag(el);
+      el.innerHTML = `<span class="dot"></span>${tag.emoji || ''} ${tag.name}`;
+      container.appendChild(el);
+    });
+    document.getElementById('tagCount').textContent = userTagIds.length;
+  }
+
+  // Save profile + tags and go to search
+  async function saveProfileAndSearch(){
+    const nickname = document.getElementById('nickname').value.trim() || 'Анонимус';
+    const gender = getSelectedGender();
+    const ageInput = document.querySelector('.setup input[type="text"]:not(#nickname)');
+    const age = ageInput ? parseInt(ageInput.value) || 18 : 18;
+    const selectedTagIds = Array.from(document.querySelectorAll('.tag.selected'))
+      .map(el => parseInt(el.dataset.tagId))
+      .filter(Boolean);
+
+    if(selectedTagIds.length < 3){
+      showToast('выбери минимум 3 тега', 'warn');
+      return;
+    }
+
+    showToast('сохраняем профиль…', 'success');
+    haptic('light');
+
+    await dbUpdateProfile({ nickname, gender, age });
+    await dbSetUserTags(selectedTagIds);
+
+    // Update UI
+    document.getElementById('setupNickname').textContent = nickname;
+    document.getElementById('setupAvatar').textContent = nickname.charAt(0).toUpperCase();
+    document.getElementById('profileName').textContent = nickname;
+    document.getElementById('profileAvatar').textContent = nickname.charAt(0).toUpperCase();
+
+    haptic('success');
+    goTo('search');
   }
 
   // ============ SEARCH ============
@@ -2884,7 +3207,36 @@
   }
 
   // ============ CHAT ============
-  function sendMessage(){
+  // Active chat state
+  let activeChatId = null;
+  let activeChatPartnerId = null;
+
+  // Start a demo chat (after match) — creates a real chat record with demo partner id 0
+  async function startDemoChat(){
+    if(sb && getTgId()){
+      // Create chat with partner_id = 0 (demo mode, no real second user)
+      const chat = await dbCreateChat(0);
+      if(chat){
+        activeChatId = chat.id;
+        activeChatPartnerId = 0;
+        // Update partner name in chat header
+        const nameEl = document.querySelector('.chat-partner-bar .name');
+        if(nameEl) nameEl.innerHTML = `<span class="at">@</span>Moonlight_07`;
+        const avEl = document.querySelector('.chat-partner-bar .av');
+        if(avEl) avEl.textContent = 'M';
+        // Reset messages
+        const msgs = document.getElementById('chatMessages');
+        msgs.innerHTML = '<div class="msg time">сегодня</div>';
+        goTo('chat');
+        return;
+      }
+    }
+    // Fallback: just go to chat
+    activeChatId = null;
+    activeChatPartnerId = 'demo';
+    goTo('chat');
+  }
+  async function sendMessage(){
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
     if(!text) return;
@@ -2898,21 +3250,28 @@
     haptic('light');
     updateSendBtn();
 
-    setTimeout(() => {
-      const replies = [
-        'Ха-ха, согласна 😄',
-        'Интересно. Расскажи ещё!',
-        'О, я тоже так думаю.',
-        'А ты из какого города?',
-        'У тебя классный вайб, честно.',
-        'Ок, теперь моя очередь. Спрашивай!'
-      ];
-      const r = document.createElement('div');
-      r.className = 'msg them';
-      r.textContent = replies[Math.floor(Math.random()*replies.length)];
-      msgs.appendChild(r);
-      msgs.scrollTop = msgs.scrollHeight;
-    }, 800 + Math.random()*900);
+    // Save to DB if we have an active chat
+    if(activeChatId){
+      await dbSendMessage(activeChatId, text);
+      // Auto-reply only in demo mode (no real partner)
+      if(activeChatPartnerId === 0 || activeChatPartnerId === 'demo'){
+        setTimeout(() => {
+          const replies = [
+            'Ха-ха, согласна 😄',
+            'Интересно. Расскажи ещё!',
+            'О, я тоже так думаю.',
+            'А ты из какого города?',
+            'У тебя классный вайб, честно.',
+            'Ок, теперь моя очередь. Спрашивай!'
+          ];
+          const r = document.createElement('div');
+          r.className = 'msg them';
+          r.textContent = replies[Math.floor(Math.random()*replies.length)];
+          msgs.appendChild(r);
+          msgs.scrollTop = msgs.scrollHeight;
+        }, 800 + Math.random()*900);
+      }
+    }
   }
 
   // Update send button visibility based on input
@@ -3070,11 +3429,16 @@
     el.classList.add('selected');
     haptic('medium');
   }
-  function submitReport(){
+  async function submitReport(){
     const selected = document.querySelector('.reason.selected');
     if(!selected){ showToast('выбери причину', 'warn'); return; }
-    showToast('жалоба отправлена', 'success');
-    setTimeout(() => { goTo('chats'); }, 1500);
+    const reason = selected.querySelector('.rt')?.textContent.trim() || 'Другое';
+    const comment = document.querySelector('.report-comment textarea')?.value.trim() || '';
+    showToast('отправляем жалобу…', 'success');
+    // reported_id and chat_id — in demo use 0 / null
+    await dbSubmitReport(0, reason, comment, null);
+    haptic('success');
+    setTimeout(() => { goTo('chats'); showToast('жалоба отправлена', 'success'); }, 1000);
   }
 
   // ============ CHATS TABS ============
@@ -3097,6 +3461,121 @@
     const nickInput = document.getElementById('nickname');
     if(nickInput) nickInput.value = name;
   }
+
+  // ============ DB INIT ============
+  // Ensure user exists in DB, then load profile data
+  (async () => {
+    if(!sb){
+      console.warn('Supabase not initialized — running in demo mode');
+      return;
+    }
+    if(!getTgId()){
+      console.warn('No Telegram user ID — running in demo mode');
+      return;
+    }
+    const user = await dbEnsureUser();
+    if(user){
+      // Apply DB profile to UI
+      if(user.nickname){
+        document.getElementById('setupNickname').textContent = user.nickname;
+        document.getElementById('setupAvatar').textContent = user.nickname.charAt(0).toUpperCase();
+        document.getElementById('profileName').textContent = user.nickname;
+        document.getElementById('profileAvatar').textContent = user.nickname.charAt(0).toUpperCase();
+        const nickInput = document.getElementById('nickname');
+        if(nickInput) nickInput.value = user.nickname;
+      }
+      if(user.gender){
+        document.querySelectorAll('.gender-opt').forEach(g => g.classList.remove('selected'));
+        const lab = user.gender === 'male' ? 'Male' : user.gender === 'female' ? 'Female' : 'Other';
+        document.querySelectorAll('.gender-opt').forEach(g => {
+          if(g.querySelector('.lab')?.textContent === lab) g.classList.add('selected');
+        });
+      }
+    }
+    // Load tags async (don't block UI)
+    loadTags();
+  })();
+
+  // Load chats list when entering chats screen
+  async function loadChatsList(){
+    const list = document.querySelector('.chats-list');
+    if(!list) return;
+    list.innerHTML = '<div class="label" style="width:100%; text-align:center; padding: 40px;">Загрузка чатов…</div>';
+    const chats = await dbGetChats();
+    if(!chats.length){
+      list.innerHTML = `
+        <div style="text-align:center; padding: 60px 20px; color: var(--muted);">
+          <div style="font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">Пока пусто</div>
+          <div style="font-size: 13px; line-height: 1.5; max-width: 220px; margin: 0 auto;">Крути колесо, чтобы найти первого собеседника</div>
+        </div>`;
+      return;
+    }
+    list.innerHTML = '';
+    chats.forEach(c => {
+      const row = document.createElement('div');
+      row.className = 'chat-row' + (c.status === 'ended' ? ' ended' : '');
+      row.onclick = () => openChat(c.id, c.partner_id, c.partner_name);
+      const initial = (c.partner_name || 'A').charAt(0).toUpperCase();
+      const timeStr = c.last_msg_at ? new Date(c.last_msg_at).toLocaleString('ru-RU', { hour:'2-digit', minute:'2-digit' }) : '';
+      const endedTag = c.status === 'ended' ? ' <span class="ended-tag">ENDED</span>' : '';
+      row.innerHTML = `
+        <div class="av">${initial}</div>
+        <div class="body">
+          <div class="top-row">
+            <div class="name"><span class="at">@</span>${c.partner_name}${endedTag}</div>
+            <div class="time">${timeStr}</div>
+          </div>
+          <div class="last">${c.last_msg_text || 'Новый диалог'}</div>
+        </div>`;
+      list.appendChild(row);
+    });
+  }
+
+  // Open chat from list
+  async function openChat(chatId, partnerId, partnerName){
+    activeChatId = chatId;
+    activeChatPartnerId = partnerId;
+    // Update partner name in chat header
+    const nameEl = document.querySelector('.chat-partner-bar .name');
+    if(nameEl) nameEl.innerHTML = `<span class="at">@</span>${partnerName}`;
+    const avEl = document.querySelector('.chat-partner-bar .av');
+    if(avEl) avEl.textContent = (partnerName || 'A').charAt(0).toUpperCase();
+    // Clear messages and load from DB
+    const msgs = document.getElementById('chatMessages');
+    msgs.innerHTML = '<div class="msg time">загрузка сообщений…</div>';
+    goTo('chat');
+    const messages = await dbGetMessages(chatId);
+    msgs.innerHTML = '';
+    if(!messages.length){
+      msgs.innerHTML = '<div class="msg time">начни диалог</div>';
+    } else {
+      messages.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'msg ' + (m.sender_id === getTgId() ? 'me' : 'them');
+        div.textContent = m.text;
+        msgs.appendChild(div);
+      });
+    }
+    msgs.scrollTop = msgs.scrollHeight;
+    // Subscribe to realtime updates
+    subscribeToChat(chatId, (newMsg) => {
+      if(newMsg.sender_id === getTgId()) return; // skip own
+      const div = document.createElement('div');
+      div.className = 'msg them';
+      div.textContent = newMsg.text;
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+      haptic('light');
+    });
+  }
+
+  // Hook into navigation to load chats list
+  const originalGoTo = goTo;
+  goTo = function(name){
+    originalGoTo(name);
+    if(name === 'chats') loadChatsList();
+    if(name !== 'chat') unsubscribeChat();
+  };
 
   // Show onboarding on first visit, home on subsequent
   try{
