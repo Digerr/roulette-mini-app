@@ -2169,7 +2169,7 @@
         <div class="sb-meta">FREE</div>
       </div>
 
-      <div class="option-row" onclick="watchAd()">
+      <div class="option-row" id="watchAdRow" onclick="watchAd()">
         <div class="or-ico"><svg><use href="#i-play"/></svg></div>
         <div class="or-body">
           <div class="or-t">Посмотреть рекламу</div>
@@ -2333,7 +2333,7 @@
               <div id="premiumUntil" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); margin-top:2px;">—</div>
             </div>
           </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px; color:var(--ink-dim);">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px; color:var(--ink-dim); margin-bottom: 12px;">
             <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Безлимит чатов</div>
             <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Фильтр по полу</div>
             <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Поиск по городу</div>
@@ -2341,6 +2341,9 @@
             <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Приоритет в очереди</div>
             <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Без рекламы</div>
           </div>
+          <button class="btn btn-ghost" style="width:100%; font-size:12px; padding:10px;" onclick="goTo('premium-settings')">
+            Настройки Premium →
+          </button>
         </div>
 
         <div class="stats-grid">
@@ -2417,6 +2420,59 @@
         <button class="btn-text" onclick="goTo('premium')">управление Premium →</button>
         <button class="btn-text" onclick="resetProfile()" style="color: var(--red); margin-top: 8px;">сбросить профиль</button>
       </div>
+    </div>
+
+    <!-- PREMIUM SETTINGS -->
+    <div class="screen premium-screen" data-screen="premium-settings">
+      <div class="premium-hero" style="margin-bottom: 16px;">
+        <svg class="crown" viewBox="0 0 24 24"><use href="#i-crown"/></svg>
+        <h1>Настройки <span class="gold">Premium</span></h1>
+        <p id="premiumSettingsUntil">—</p>
+      </div>
+
+      <div class="section-bar gold">
+        <div class="sb-num">01</div>
+        <div class="sb-title">Фильтр по полу</div>
+        <div class="sb-meta">ПОИСК</div>
+      </div>
+
+      <div class="gender-grid" style="margin-bottom: 16px;">
+        <div class="gender-opt" data-gender-pref="male" onclick="selectGenderPref(this)">
+          <svg><use href="#i-gender-male"/></svg>
+          <div class="lab">Парни</div>
+        </div>
+        <div class="gender-opt" data-gender-pref="female" onclick="selectGenderPref(this)">
+          <svg><use href="#i-gender-female"/></svg>
+          <div class="lab">Девушки</div>
+        </div>
+        <div class="gender-opt selected" data-gender-pref="" onclick="selectGenderPref(this)">
+          <svg><use href="#i-gender-other"/></svg>
+          <div class="lab">Любой</div>
+        </div>
+      </div>
+
+      <div class="section-bar gold">
+        <div class="sb-num">02</div>
+        <div class="sb-title">Поиск по городу</div>
+        <div class="sb-meta">ГЕО</div>
+      </div>
+
+      <div class="field" style="margin-bottom: 16px;">
+        <input type="text" id="cityPrefInput" placeholder="Например: Москва (или пусто = любой)">
+      </div>
+
+      <div class="section-bar gold">
+        <div class="sb-num">03</div>
+        <div class="sb-title">Цвет ника</div>
+        <div class="sb-meta">СТИЛЬ</div>
+      </div>
+
+      <div id="nickColorsGrid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom: 20px;"></div>
+
+      <button class="btn btn-gold" onclick="savePremiumSettings()">
+        СОХРАНИТЬ НАСТРОЙКИ <svg width="14" height="14"><use href="#i-arrow-right"/></svg>
+      </button>
+      <button class="btn-text" onclick="goBack()">← назад</button>
     </div>
 
     <!-- REPORT -->
@@ -2734,7 +2790,10 @@
         }).eq('tg_id', tgId);
       }
       currentUser = data;
-      return data;
+      // Re-fetch to include nick_color and prefs if schema was updated
+      const { data: fresh } = await sb.from('users').select('*').eq('tg_id', tgId).maybeSingle();
+      if(fresh) currentUser = fresh;
+      return currentUser;
     }catch(e){
       console.warn('dbEnsureUser error:', e);
       return null;
@@ -3135,12 +3194,13 @@
     chat: { t: 'Чат', s: 'онлайн' },
     limit: { t: 'Лимиты', s: 'исчерпаны' },
     premium: { t: 'Premium', s: 'подписка' },
+    'premium-settings': { t: 'Premium', s: 'настройки' },
     profile: { t: 'Профиль', s: 'мой' },
     report: { t: 'Жалоба', s: 'безопасность' },
     chats: { t: 'Чаты', s: 'история' }
   };
 
-  const backableScreens = ['setup', 'match', 'chat', 'limit', 'report', 'premium'];
+  const backableScreens = ['setup', 'match', 'chat', 'limit', 'report', 'premium', 'premium-settings'];
 
   function goTo(name){
     if(isAnimating) return;
@@ -3698,6 +3758,9 @@
       const total = user.is_premium ? '∞' : user.daily_limit;
       document.getElementById('limitRemaining').textContent = remaining;
       document.getElementById('limitTotal').textContent = total;
+      // Hide "watch ad" option for premium users
+      const adRow = document.getElementById('watchAdRow');
+      if(adRow) adRow.style.display = user.is_premium ? 'none' : 'flex';
     }
   }
 
@@ -3898,6 +3961,8 @@
     if(name === 'limit') loadLimitInfo();
     if(name === 'profile') loadProfileStats();
     if(name === 'welcome') loadHomeStats();
+    if(name === 'premium-settings') loadPremiumSettings();
+    if(name === 'chat') setTimeout(applyNickColor, 100);
     if(name !== 'chat') unsubscribeChat();
     // Update streak on any navigation
     if(name === 'welcome' || name === 'search') dbUpdateStreak();
@@ -4045,6 +4110,116 @@
     }catch(e){
       showToast('ошибка сброса', 'error');
     }
+  }
+
+  // ============ PREMIUM SETTINGS ============
+  const NICK_COLORS_FALLBACK = [
+    {code:'red',name:'Красный',hex:'#e5342b'},
+    {code:'gold',name:'Золотой',hex:'#ffd600'},
+    {code:'lime',name:'Лайм',hex:'#c6ff00'},
+    {code:'blue',name:'Голубой',hex:'#2aabee'},
+    {code:'purple',name:'Фиолетовый',hex:'#8b5cf6'},
+    {code:'pink',name:'Розовый',hex:'#ff5e94'},
+    {code:'cyan',name:'Бирюзовый',hex:'#00d4ff'},
+    {code:'orange',name:'Оранжевый',hex:'#ff9500'}
+  ];
+
+  async function loadPremiumSettings(){
+    if(!sb || !getTgId()) return;
+    // Load user's current prefs
+    const { data: u } = await sb.from('users')
+      .select('is_premium, premium_until, gender_pref, city_pref, nick_color')
+      .eq('tg_id', getTgId()).maybeSingle();
+    if(!u) return;
+    if(!u.is_premium){
+      showToast('нужен Premium', 'warn');
+      setTimeout(() => goTo('premium'), 1000);
+      return;
+    }
+    // Show until
+    const untilEl = document.getElementById('premiumSettingsUntil');
+    if(untilEl && u.premium_until){
+      const d = new Date(u.premium_until);
+      untilEl.textContent = 'до ' + d.toLocaleDateString('ru-RU', { day:'2-digit', month:'long', year:'numeric' });
+    }
+    // Set gender pref
+    document.querySelectorAll('[data-gender-pref]').forEach(el => {
+      el.classList.toggle('selected', (el.dataset.genderPref || '') === (u.gender_pref || ''));
+    });
+    // Set city
+    const cityEl = document.getElementById('cityPrefInput');
+    if(cityEl) cityEl.value = u.city_pref || '';
+    // Render colors
+    let colors = NICK_COLORS_FALLBACK;
+    try{
+      const { data } = await sb.from('nick_colors').select('*').order('id');
+      if(data && data.length) colors = data;
+    }catch(e){}
+    const grid = document.getElementById('nickColorsGrid');
+    if(grid){
+      grid.innerHTML = '';
+      colors.forEach(c => {
+        const el = document.createElement('div');
+        el.style.cssText = `aspect-ratio:1; border-radius:14px; background:${c.hex}; cursor:pointer; display:flex; align-items:center; justify-content:center; border: 3px solid ${u.nick_color === c.code ? '#fff' : 'transparent'}; transition: all .15s;`;
+        el.onclick = () => selectNickColor(c.code, el, colors);
+        el.dataset.colorCode = c.code;
+        if(u.nick_color === c.code){
+          el.innerHTML = '<svg style="width:24px;height:24px;color:#fff;fill:none;stroke-width:3;" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7" stroke="white" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+        grid.appendChild(el);
+      });
+    }
+  }
+
+  function selectGenderPref(el){
+    document.querySelectorAll('[data-gender-pref]').forEach(g => g.classList.remove('selected'));
+    el.classList.add('selected');
+    haptic('light');
+  }
+
+  let selectedNickColor = null;
+  function selectNickColor(code, el, allColors){
+    selectedNickColor = code;
+    document.querySelectorAll('#nickColorsGrid > div').forEach(d => {
+      d.style.border = '3px solid transparent';
+      d.innerHTML = '';
+    });
+    el.style.border = '3px solid #fff';
+    el.innerHTML = '<svg style="width:24px;height:24px;" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+    haptic('light');
+  }
+
+  async function savePremiumSettings(){
+    if(!sb || !getTgId()) return;
+    const genderPref = document.querySelector('[data-gender-pref].selected')?.dataset.genderPref || null;
+    const cityPref = document.getElementById('cityPrefInput')?.value.trim() || null;
+    const updates = {
+      gender_pref: genderPref,
+      city_pref: cityPref
+    };
+    if(selectedNickColor) updates.nick_color = selectedNickColor;
+    showToast('сохраняем…', 'success');
+    await dbUpdateProfile(updates);
+    haptic('success');
+    showToast('настройки сохранены', 'success');
+    setTimeout(() => goTo('profile'), 1200);
+  }
+
+  // Apply nick color to chat messages (premium users get colored nicknames)
+  function applyNickColor(){
+    if(!currentUser?.nick_color) return;
+    // Apply to user's own messages
+    document.querySelectorAll('.msg.me').forEach(m => {
+      m.style.background = currentUser.nick_color === 'gold' ? 'var(--gold)'
+        : currentUser.nick_color === 'lime' ? 'var(--lime)'
+        : currentUser.nick_color === 'blue' ? '#2aabee'
+        : currentUser.nick_color === 'purple' ? '#8b5cf6'
+        : currentUser.nick_color === 'pink' ? '#ff5e94'
+        : currentUser.nick_color === 'cyan' ? '#00d4ff'
+        : currentUser.nick_color === 'orange' ? '#ff9500'
+        : 'var(--red)';
+      m.style.color = (currentUser.nick_color === 'gold' || currentUser.nick_color === 'lime') ? '#1a1410' : '#fff';
+    });
   }
 
   // Show onboarding on first visit, home on subsequent
