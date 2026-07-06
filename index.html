@@ -2032,7 +2032,7 @@
           <div class="ai"><svg><use href="#i-bolt"/></svg></div>
           <div>
             <div class="at">Лимиты</div>
-            <div class="ad" id="homeLimitText">— осталось</div>
+            <div class="ad" id="homeLimitText">0 осталось</div>
           </div>
         </div>
       </div>
@@ -2643,108 +2643,20 @@
       </div>
 
       <div class="chats-tabs">
-        <div class="chat-tab active">Все <span class="count">8</span></div>
-        <div class="chat-tab">Активные <span class="count">2</span></div>
-        <div class="chat-tab">Избранные <span class="count">3</span></div>
-        <div class="chat-tab">Завершённые <span class="count">3</span></div>
+        <div class="chat-tab active" data-tab="all">Все <span class="count" id="tabCountAll">0</span></div>
+        <div class="chat-tab" data-tab="active">Активные <span class="count" id="tabCountActive">0</span></div>
+        <div class="chat-tab" data-tab="pinned">Избранные <span class="count" id="tabCountPinned">0</span></div>
+        <div class="chat-tab" data-tab="ended">Завершённые <span class="count" id="tabCountEnded">0</span></div>
       </div>
 
-      <div class="chats-list">
-        <div class="chat-row" onclick="goTo('chat')">
-          <div class="av">M<div class="online-dot"></div></div>
-          <div class="body">
-            <div class="top-row">
-              <div class="name"><span class="at">@</span>Moonlight_07</div>
-              <div class="time">21:14</div>
-            </div>
-            <div class="last"><span class="you">Ты: </span>О, я тоже! Сцена на черве — просто огонь.</div>
-          </div>
-          <div class="badge">3</div>
-        </div>
-
-        <div class="chat-row" onclick="goTo('chat')">
-          <div class="av lime">K<div class="online-dot"></div></div>
-          <div class="body">
-            <div class="top-row">
-              <div class="name"><span class="at">@</span>Kasper_99</div>
-              <div class="time">20:47</div>
-            </div>
-            <div class="last">Слушай, а в какой игре ты зависаешь больше всего?</div>
-          </div>
-          <div class="badge">1</div>
-        </div>
-
-        <div class="chat-row" onclick="goTo('chat')">
-          <div class="av">N</div>
-          <div class="body">
-            <div class="top-row">
-              <div class="name"><span class="at">@</span>NightOwl_x</div>
-              <div class="time">вчера</div>
-            </div>
-            <div class="last"><span class="you">Ты: </span>Был круто поболтать, удачи на стриме!</div>
-          </div>
-        </div>
-
-        <div class="chat-row ended" onclick="goTo('chat')">
-          <div class="av lime">D</div>
-          <div class="body">
-            <div class="top-row">
-              <div class="name"><span class="at">@</span>Dusty_Roads <span class="ended-tag">ENDED</span></div>
-              <div class="time">вчера</div>
-            </div>
-            <div class="last">Согласен, но это уже другая история...</div>
-          </div>
-        </div>
-
-        <div class="chat-row" onclick="goTo('chat')">
-          <div class="av">V</div>
-          <div class="body">
-            <div class="top-row">
-              <div class="name"><span class="at">@</span>Velvet_Vega</div>
-              <div class="time">2 дн</div>
-            </div>
-            <div class="last">Ха-ха, ну ты даёшь) Было весело</div>
-          </div>
-        </div>
-
-        <div class="chat-row ended" onclick="goTo('chat')">
-          <div class="av lime">P</div>
-          <div class="body">
-            <div class="top-row">
-              <div class="name"><span class="at">@</span>Phantom_42 <span class="ended-tag">ENDED</span></div>
-              <div class="time">3 дн</div>
-            </div>
-            <div class="last">Удачи в проекте, не теряйся</div>
-          </div>
-        </div>
-
-        <div class="chat-row" onclick="goTo('chat')">
-          <div class="av">S</div>
-          <div class="body">
-            <div class="top-row">
-              <div class="name"><span class="at">@</span>Starlight_Em</div>
-              <div class="time">5 дн</div>
-            </div>
-            <div class="last">Окей, тогда до встречи в чате!</div>
-          </div>
-        </div>
-
-        <div class="chat-row ended" onclick="goTo('chat')">
-          <div class="av lime">R</div>
-          <div class="body">
-            <div class="top-row">
-              <div class="name"><span class="at">@</span>RetroVibe_88 <span class="ended-tag">ENDED</span></div>
-              <div class="time">1 нед</div>
-            </div>
-            <div class="last">Был рад знакомству, береги себя</div>
-          </div>
-        </div>
+      <div class="chats-list" id="chatsListContainer">
+        <!-- chats loaded dynamically by loadChatsList() -->
       </div>
     </div>
 
   </div>
 
-  <!-- BOTTOM NAV -->
+    <!-- BOTTOM NAV -->
   <div class="bottom-nav">
     <div class="nav-item active" data-nav="welcome" onclick="goTo('welcome')">
       <svg><use href="#i-home"/></svg><span>HOME</span>
@@ -3981,6 +3893,23 @@
     if(!list) return;
     list.innerHTML = '<div class="label" style="width:100%; text-align:center; padding: 40px;">Загрузка чатов…</div>';
     const chats = await dbGetChats();
+
+    // Update tab counters
+    const counts = {
+      all: chats.length,
+      active: chats.filter(c => c.status === 'active').length,
+      pinned: chats.filter(c => c.pinned).length,
+      ended: chats.filter(c => c.status === 'ended').length
+    };
+    const elAll = document.getElementById('tabCountAll');
+    const elActive = document.getElementById('tabCountActive');
+    const elPinned = document.getElementById('tabCountPinned');
+    const elEnded = document.getElementById('tabCountEnded');
+    if(elAll) elAll.textContent = counts.all;
+    if(elActive) elActive.textContent = counts.active;
+    if(elPinned) elPinned.textContent = counts.pinned;
+    if(elEnded) elEnded.textContent = counts.ended;
+
     if(!chats.length){
       list.innerHTML = `
         <div style="text-align:center; padding: 60px 20px; color: var(--muted);">
@@ -3997,11 +3926,12 @@
       const initial = (c.partner_name || 'A').charAt(0).toUpperCase();
       const timeStr = c.last_msg_at ? new Date(c.last_msg_at).toLocaleString('ru-RU', { hour:'2-digit', minute:'2-digit' }) : '';
       const endedTag = c.status === 'ended' ? ' <span class="ended-tag">ENDED</span>' : '';
+      const pinBadge = c.pinned ? ' <span class="ended-tag" style="background:var(--red-tint);color:var(--red);">PIN</span>' : '';
       row.innerHTML = `
         <div class="av">${initial}</div>
         <div class="body">
           <div class="top-row">
-            <div class="name"><span class="at">@</span>${c.partner_name}${endedTag}</div>
+            <div class="name"><span class="at">@</span>${c.partner_name}${endedTag}${pinBadge}</div>
             <div class="time">${timeStr}</div>
           </div>
           <div class="last">${c.last_msg_text || 'Новый диалог'}</div>
@@ -4065,23 +3995,42 @@
 
   // Load real stats for home screen
   async function loadHomeStats(){
-    if(!sb || !getTgId()) return;
-    const stats = await dbGetStats();
-    if(!stats) return;
     const el1 = document.getElementById('homeStatChats');
     const el2 = document.getElementById('homeStatMatches');
     const el3 = document.getElementById('homeStatStreak');
-    if(el1) el1.textContent = stats.total_chats || 0;
-    if(el2) el2.textContent = stats.active_chats || 0;
-    if(el3) el3.textContent = stats.streak_days || 0;
     const streakText = document.getElementById('homeStreakText');
-    if(streakText) streakText.textContent = (stats.streak_days || 0) + ' дней подряд!';
+    const limitText = document.getElementById('homeLimitText');
+
+    if(!sb || !getTgId()){
+      // Demo mode — show zeros
+      if(el1) el1.textContent = '0';
+      if(el2) el2.textContent = '0';
+      if(el3) el3.textContent = '0';
+      if(streakText) streakText.textContent = '0 дней подряд!';
+      if(limitText) limitText.textContent = '0 осталось';
+      return;
+    }
+    const stats = await dbGetStats();
+    if(stats){
+      if(el1) el1.textContent = stats.total_chats || 0;
+      if(el2) el2.textContent = stats.active_chats || 0;
+      if(el3) el3.textContent = stats.streak_days || 0;
+      if(streakText) streakText.textContent = (stats.streak_days || 0) + ' дней подряд!';
+    } else {
+      if(el1) el1.textContent = '0';
+      if(el2) el2.textContent = '0';
+      if(el3) el3.textContent = '0';
+      if(streakText) streakText.textContent = '0 дней подряд!';
+    }
 
     // Load remaining limit
     const remaining = await dbGetRemainingChats();
-    const limitText = document.getElementById('homeLimitText');
     if(limitText){
-      limitText.textContent = (remaining === Infinity ? '∞' : remaining) + ' осталось';
+      if(remaining === Infinity || remaining === 'Infinity'){
+        limitText.textContent = '∞ осталось';
+      } else {
+        limitText.textContent = (remaining || 0) + ' осталось';
+      }
     }
   }
 
