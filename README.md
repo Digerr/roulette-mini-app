@@ -1,17 +1,43 @@
-# Roulette Mini App
+# Roulza
 
-Gamified Anonymous Chat Roulette for Telegram.
+Геймифицированная анонимная чат-рулетка для Telegram.
 
-## Deploy
+## Ссылки
 
-Static HTML Mini App. Hosted on Vercel.
+- **Bot:** [@RoulzaBot](https://t.me/RoulzaBot)
+- **Web App:** https://roulette-mini-app-digerr-sergo-s-projects1.vercel.app
+- **GitHub:** https://github.com/Digerr/roulette-mini-app
+- **Supabase:** https://otaoqqbtawedvimbirzn.supabase.co
 
-## Structure
+## Возможности
 
-- `index.html` — main app (single file)
-- `vercel.json` — Vercel config
-- `package.json` — scripts
+- 🎰 Рулетка-поиск собеседника по интересам
+- 👤 Полная анонимность (только ник, без фото/номеров)
+- 💬 Realtime-чат через Supabase channels
+- 🏆 8 достижений с авто-выдачей
+- 🔥 Streak за ежедневные заходы
+- ⭐ Premium через Telegram Stars:
+  - Безлимит чатов
+  - Фильтр по полу собеседника
+  - Поиск по городу
+  - 8 цветов ника
+  - Приоритет в очереди
+  - Без рекламы
 
-## Bot Setup
+## Стек
 
-Bot token configured via @BotFather. Menu button points to Vercel URL.
+- Frontend: чистый HTML/CSS/JS, Telegram WebApp SDK, Supabase JS SDK
+- Backend: Vercel serverless functions (webhook, create-invoice)
+- DB: Supabase Postgres + Realtime
+- Payments: Telegram Stars (XTR currency)
+
+## Деплой
+
+```bash
+vercel --prod
+```
+
+## Переменные окружения (опционально)
+
+- `BOT_TOKEN` — токен бота (по умолчанию захардкожен)
+- `WEBAPP_URL` — URL Mini App

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>ChatRoulette</title>
+<title>Roulza</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1788,7 +1788,7 @@
       <svg><use href="#i-back"/></svg>
     </div>
     <div class="title">
-      <span id="headerTitle">ChatRoulette</span>
+      <span id="headerTitle">Roulza</span>
       <span class="sub" id="headerSub"></span>
     </div>
     <div class="header-btn theme-toggle" onclick="toggleTheme()">
@@ -3186,8 +3186,8 @@
   let isAnimating = false;
 
   const headerTitles = {
-    onboarding: { t: 'ChatRoulette', s: '' },
-    welcome: { t: 'ChatRoulette', s: '' },
+    onboarding: { t: 'Roulza', s: '' },
+    welcome: { t: 'Roulza', s: '' },
     setup: { t: 'Профиль', s: 'настройка' },
     search: { t: 'Поиск', s: 'рулетка' },
     match: { t: 'Соединение', s: 'найдено' },
@@ -3212,7 +3212,7 @@
     if(!target){ isAnimating = false; return; }
     target.classList.add('active');
 
-    const meta = headerTitles[name] || { t: 'ChatRoulette', s: '' };
+    const meta = headerTitles[name] || { t: 'Roulza', s: '' };
     document.getElementById('headerTitle').textContent = meta.t;
     document.getElementById('headerSub').textContent = meta.s;
 

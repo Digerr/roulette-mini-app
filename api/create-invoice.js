@@ -1,5 +1,5 @@
 // Create Telegram Stars invoice for Premium subscription
-const BOT_TOKEN = process.env.BOT_TOKEN || '8841799446:AAEBGN75o9dHuQUKy3VYCZ8bVI6h0qUhQ7U';
+const BOT_TOKEN = process.env.BOT_TOKEN || '8554075993:AAFtyDI9P9UODLnC-mhryJq2HGFX799n0TM';
 const API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 const PLANS = {

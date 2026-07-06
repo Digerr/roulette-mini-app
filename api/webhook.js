@@ -1,5 +1,5 @@
 // Telegram bot webhook handler for Vercel serverless
-const BOT_TOKEN = process.env.BOT_TOKEN || '8841799446:AAEBGN75o9dHuQUKy3VYCZ8bVI6h0qUhQ7U';
+const BOT_TOKEN = process.env.BOT_TOKEN || '8554075993:AAFtyDI9P9UODLnC-mhryJq2HGFX799n0TM';
 const WEBAPP_URL = process.env.WEBAPP_URL || 'https://roulette-mini-app-digerr-sergo-s-projects1.vercel.app';
 const API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
 
     await tg('sendMessage', {
       chat_id: update.message.chat.id,
-      text: `🎉 *Premium активирован!*\n\nСрок: ${days} дней\nДействует до: ${until.toLocaleDateString('ru-RU')}\n\nТеперь тебе доступны:\n• Безлимитные диалоги\n• Фильтр по полу собеседника\n• Поиск по городу\n• Уникальный цвет ника`,
+      text: `🎉 *Roulza Premium активирован!*\n\nСрок: ${days} дней\nДействует до: ${until.toLocaleDateString('ru-RU')}\n\nТеперь тебе доступны:\n• Безлимитные диалоги\n• Фильтр по полу собеседника\n• Поиск по городу\n• Уникальный цвет ника`,
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [[
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
   if (cmd === '/start') {
     await tg('sendMessage', {
       chat_id: chatId,
-      text: '🎲 *ChatRoulette*\n\nАнонимная чат-рулетка внутри Telegram.\n\n• Совпадение по интересам\n• Полная анонимность\n• Премиум-фильтры за Звёзды\n\nЖми кнопку ниже, чтобы крутить колесо 👇',
+      text: '🎲 *Roulza*\n\nАнонимная чат-рулетка внутри Telegram.\n\n• Совпадение по интересам\n• Полная анонимность\n• Премиум-фильтры за Звёзды\n\nЖми кнопку ниже, чтобы крутить колесо 👇',
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [[
