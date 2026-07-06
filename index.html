@@ -2325,6 +2325,24 @@
           </div>
         </div>
 
+        <div id="premiumStatus" style="display:none; margin-bottom: 20px; padding: 16px; background: var(--surface); border: 2px solid var(--gold); border-radius: 16px;">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom: 12px;">
+            <svg style="width:24px;height:24px;stroke:var(--gold);fill:none;stroke-width:1.8;" viewBox="0 0 24 24"><use href="#i-crown"/></svg>
+            <div style="flex:1;">
+              <div style="font-size:15px; font-weight:700; color:var(--gold);">PREMIUM ACTIVE</div>
+              <div id="premiumUntil" style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); margin-top:2px;">—</div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px; color:var(--ink-dim);">
+            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Безлимит чатов</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Фильтр по полу</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Поиск по городу</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Цвет ника</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Приоритет в очереди</div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="color:var(--gold);">✓</span> Без рекламы</div>
+          </div>
+        </div>
+
         <div class="stats-grid">
           <div class="stat-card">
             <div class="sicon"><svg><use href="#i-chat"/></svg></div>
@@ -2397,6 +2415,7 @@
           <button class="btn btn-ghost" onclick="goTo('setup')">Редактировать профиль →</button>
         </div>
         <button class="btn-text" onclick="goTo('premium')">управление Premium →</button>
+        <button class="btn-text" onclick="resetProfile()" style="color: var(--red); margin-top: 8px;">сбросить профиль</button>
       </div>
     </div>
 
@@ -3353,30 +3372,54 @@
       partnerId = await dbFindMatch();
     }
 
-    // Update match screen based on result
-    if(partnerId && partnerId !== 0){
-      // Real partner found — fetch partner info
-      const { data: partner } = await sb.from('users')
-        .select('nickname, gender, is_premium')
-        .eq('tg_id', partnerId).maybeSingle();
-      if(partner){
-        const nicknameEl = document.querySelector('.match-info .nickname');
-        if(nicknameEl) nicknameEl.innerHTML = `<span class="at">@</span>${partner.nickname}`;
-        const avEl = document.querySelector('.match-pair .av.them');
-        if(avEl) avEl.textContent = (partner.nickname || 'A').charAt(0).toUpperCase();
-        window._matchedPartnerId = partnerId;
-        window._matchedPartnerName = partner.nickname;
-      }
-    } else {
-      // No real match — use demo partner
-      window._matchedPartnerId = 0;
-      window._matchedPartnerName = 'Moonlight_07';
-    }
-
     // Leave queue
     await dbLeaveQueue();
 
-    goTo('match');
+    // No partner found — show "nobody here" state, return to search
+    if(!partnerId || partnerId === 0){
+      // Reset wheel UI
+      const wheel = document.getElementById('searchWheelBtn');
+      if(wheel){
+        wheel.classList.remove('spinning');
+        wheel.style.pointerEvents = 'auto';
+        wheel.style.opacity = '1';
+      }
+      document.getElementById('searchLabel').textContent = '// NO MATCH';
+      document.getElementById('searchStatus').textContent = 'Никого нет';
+      document.getElementById('searchSub').textContent = 'Сейчас в очереди нет подходящего собеседника. Попробуй позже.';
+      document.getElementById('searchCount').textContent = '00';
+      document.getElementById('searchLab').textContent = 'TRY AGAIN';
+      haptic('warning');
+      showToast('никого не найдено', 'warn');
+      return;
+    }
+
+    // Real partner found — fetch partner info
+    const { data: partner } = await sb.from('users')
+      .select('nickname, gender, is_premium')
+      .eq('tg_id', partnerId).maybeSingle();
+    if(partner){
+      const nicknameEl = document.querySelector('.match-info .nickname');
+      if(nicknameEl) nicknameEl.innerHTML = `<span class="at">@</span>${partner.nickname}`;
+      const avEl = document.querySelector('.match-pair .av.them');
+      if(avEl) avEl.textContent = (partner.nickname || 'A').charAt(0).toUpperCase();
+      window._matchedPartnerId = partnerId;
+      window._matchedPartnerName = partner.nickname;
+      goTo('match');
+    } else {
+      // Partner record missing — fallback to "nobody"
+      const wheel = document.getElementById('searchWheelBtn');
+      if(wheel){
+        wheel.classList.remove('spinning');
+        wheel.style.pointerEvents = 'auto';
+        wheel.style.opacity = '1';
+      }
+      document.getElementById('searchLabel').textContent = '// NO MATCH';
+      document.getElementById('searchStatus').textContent = 'Никого нет';
+      document.getElementById('searchSub').textContent = 'Попробуй позже.';
+      document.getElementById('searchCount').textContent = '00';
+      document.getElementById('searchLab').textContent = 'TRY AGAIN';
+    }
   }
 
 
@@ -3560,45 +3603,76 @@
     haptic('light');
   }
   // Premium prices mapping (in Telegram Stars)
-  const PREMIUM_PRICES = {
-    '1 мес': { stars: 199, days: 30 },
-    '3 мес': { stars: 499, days: 90 },
-    'Год':   { stars: 1499, days: 365 }
+  const PREMIUM_PLANS = {
+    '1 мес': { code: '1m', stars: 199,  days: 30 },
+    '3 мес': { code: '3m', stars: 499,  days: 90 },
+    'Год':   { code: '12m', stars: 1499, days: 365 }
   };
 
   async function buyPremium(){
-    // Find selected plan
     const selected = document.querySelector('.price-opt.selected .name');
     const planName = selected?.textContent.trim() || '3 мес';
-    const plan = PREMIUM_PRICES[planName];
+    const plan = PREMIUM_PLANS[planName];
     if(!plan){
       showToast('выбери тариф', 'warn');
       return;
     }
 
-    // Try Telegram Stars invoice via bot API
-    // Note: requires invoice to be created server-side in production
-    // For MVP we simulate the payment flow
-    showToast('оплата через Telegram Stars', 'warn');
-
-    if(tg?.openInvoice){
-      // Real Telegram Stars flow — would need invoice link from server
-      // tg.openInvoice(invoiceUrl, (status) => {...});
-      // For now simulate
+    if(!getTgId()){
+      showToast('нужен вход через Telegram', 'warn');
+      return;
     }
 
-    setTimeout(async () => {
-      const ok = await dbActivatePremium(plan.days);
-      if(ok){
-        showToast('Premium активирован!', 'success');
-        haptic('success');
-        // Update UI — mark premium achievements
-        await dbCheckAchievements();
-        setTimeout(() => goTo('profile'), 1500);
-      } else {
-        showToast('ошибка активации', 'error');
+    showToast('создаём счёт…', 'success');
+    haptic('light');
+
+    // 1. Get invoice URL from our server
+    let invoiceUrl = null;
+    try{
+      const res = await fetch('/api/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: plan.code,
+          user_id: getTgId(),
+          nickname: currentUser?.nickname || ''
+        })
+      });
+      const data = await res.json();
+      if(!data.ok){
+        showToast('ошибка: ' + (data.error || 'invoice'), 'error');
+        return;
       }
-    }, 1500);
+      invoiceUrl = data.invoice_url;
+    }catch(e){
+      showToast('ошибка сети', 'error');
+      return;
+    }
+
+    // 2. Open Telegram invoice
+    if(tg?.openInvoice){
+      tg.openInvoice(invoiceUrl, async (status) => {
+        if(status === 'paid'){
+          haptic('success');
+          showToast('оплата получена, активируем…', 'success');
+          // Activate premium in DB (also done by webhook, but do it here for immediate UI update)
+          const ok = await dbActivatePremium(plan.days);
+          if(ok){
+            showToast('Premium активирован!', 'success');
+            await dbCheckAchievements();
+            setTimeout(() => goTo('profile'), 1500);
+          }
+        } else if(status === 'cancelled'){
+          showToast('оплата отменена', 'warn');
+        } else if(status === 'failed'){
+          showToast('оплата не удалась', 'error');
+        }
+      });
+    } else {
+      // Fallback for browser — open invoice URL directly
+      window.open(invoiceUrl, '_blank');
+      showToast('открой ссылку в Telegram для оплаты', 'warn');
+    }
   }
   async function watchAd(){
     showToast('загрузка рекламы 15 сек', 'warn');
@@ -3913,6 +3987,63 @@
     const meta = document.querySelector('.profile-header .pmeta');
     if(meta){
       meta.textContent = (stats.nickname || 'Анонимус') + ' · ' + (stats.gender || 'other').toUpperCase() + (stats.is_premium ? ' · PREMIUM' : '');
+    }
+
+    // Show premium status block if active
+    const premStatus = document.getElementById('premiumStatus');
+    const premUntil = document.getElementById('premiumUntil');
+    if(premStatus && premUntil){
+      // Fetch premium_until from users table directly
+      const { data: fullUser } = await sb.from('users')
+        .select('is_premium, premium_until')
+        .eq('tg_id', getTgId()).maybeSingle();
+      if(fullUser?.is_premium){
+        premStatus.style.display = 'block';
+        if(fullUser.premium_until){
+          const d = new Date(fullUser.premium_until);
+          premUntil.textContent = 'до ' + d.toLocaleDateString('ru-RU', { day:'2-digit', month:'long', year:'numeric' });
+        } else {
+          premUntil.textContent = 'бессрочно';
+        }
+      } else {
+        premStatus.style.display = 'none';
+      }
+    }
+  }
+
+  // Reset profile data (clear all user's data from DB)
+  async function resetProfile(){
+    if(!sb || !getTgId()) return;
+    if(!confirm('Сбросить весь профиль и статистику? Это удалит все чаты, сообщения, теги и достижения.')) return;
+    const tgId = getTgId();
+    showToast('сбрасываем…', 'warn');
+    try{
+      // Delete related data
+      await sb.from('messages').delete().in('chat_id',
+        (await sb.from('chats').select('id').or(`user1_id.eq.${tgId},user2_id.eq.${tgId}`)).data?.map(c => c.id) || []
+      );
+      await sb.from('chats').delete().or(`user1_id.eq.${tgId},user2_id.eq.${tgId}`);
+      await sb.from('user_tags').delete().eq('user_id', tgId);
+      await sb.from('user_achievements').delete().eq('user_id', tgId);
+      await sb.from('reports').delete().or(`reporter_id.eq.${tgId},reported_id.eq.${tgId}`);
+      await sb.from('search_queue').delete().eq('user_id', tgId);
+      // Reset user to defaults
+      await sb.from('users').update({
+        nickname: 'Анонимус',
+        gender: 'other',
+        age: null,
+        is_premium: false,
+        premium_until: null,
+        daily_limit: 10,
+        daily_used: 0,
+        daily_reset_at: new Date().toISOString().slice(0,10),
+        streak_days: 0
+      }).eq('tg_id', tgId);
+      showToast('профиль сброшен', 'success');
+      haptic('success');
+      setTimeout(() => goTo('setup'), 1500);
+    }catch(e){
+      showToast('ошибка сброса', 'error');
     }
   }
 
