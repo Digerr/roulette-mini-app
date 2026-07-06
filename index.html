@@ -186,6 +186,24 @@
   body.tg-light .theme-toggle .moon{ display:block; }
   body.tg-light .theme-toggle .sun{ display:none; }
 
+  /* Profile button — gradient accent to distinguish from theme toggle */
+  .profile-btn{
+    background: linear-gradient(135deg, var(--red), var(--gold)) !important;
+    border-color: transparent !important;
+    color: #fff !important;
+    position: relative;
+    overflow: hidden;
+  }
+  .profile-btn svg{ stroke: #fff; }
+  .profile-btn::after{
+    content:"";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent 60%);
+    pointer-events: none;
+  }
+  .profile-btn:active{ transform: scale(0.92); }
+
   /* ============ SCREENS ============ */
   .screens{ flex:1; position:relative; overflow:hidden; }
   .screen{
@@ -1875,8 +1893,11 @@
       <svg class="moon"><use href="#i-moon"/></svg>
       <svg class="sun"><use href="#i-sun"/></svg>
     </div>
-    <div class="header-btn" onclick="goTo('profile')">
-      <svg><use href="#i-cog"/></svg>
+    <div class="header-btn profile-btn" onclick="goTo('profile')" title="Профиль" id="profileHeaderBtn">
+      <svg><use href="#i-user"/></svg>
+      <span class="profile-premium-badge" id="profilePremiumBadge" style="display:none;">
+        <svg viewBox="0 0 24 24" style="width:10px;height:10px;position:absolute;top:-4px;right:-4px;background:var(--gold);border:1.5px solid var(--bg);border-radius:50%;padding:1px;stroke:#1a1410;fill:#1a1410;stroke-width:1.5;"><path d="M3 18h18M2 7l5 5 5-7 5 7 5-5-2 11H4L2 7z"/></svg>
+      </span>
     </div>
   </div>
 
@@ -4115,7 +4136,18 @@
     if(name !== 'chat') unsubscribeChat();
     // Update streak on any navigation
     if(name === 'welcome' || name === 'search') dbUpdateStreak();
+    // Refresh premium badge in header on home/profile visits
+    if(name === 'welcome' || name === 'profile') refreshHeaderPremiumBadge();
   };
+
+  // Quick refresh of premium badge without full stats load
+  async function refreshHeaderPremiumBadge(){
+    if(!sb || !getTgId()) return;
+    try{
+      const { data: u } = await sb.from('users').select('is_premium').eq('tg_id', getTgId()).maybeSingle();
+      updateProfileHeaderBadge(u?.is_premium);
+    }catch(e){}
+  }
 
   // Load real stats for home screen
   async function loadHomeStats(){
@@ -4163,6 +4195,8 @@
     if(!sb || !getTgId()) return;
     const stats = await dbGetStats();
     if(!stats) return;
+    // Update premium badge in header
+    updateProfileHeaderBadge(stats.is_premium);
 
     // Update streak
     const streakVal = document.querySelector('.streak-card .sval');
@@ -4242,6 +4276,12 @@
         premStatus.style.display = 'none';
       }
     }
+  }
+
+  // Update premium badge in header button
+  function updateProfileHeaderBadge(isPremium){
+    const badge = document.getElementById('profilePremiumBadge');
+    if(badge) badge.style.display = isPremium ? 'block' : 'none';
   }
 
   // Reset profile data (clear all user's data from DB)
