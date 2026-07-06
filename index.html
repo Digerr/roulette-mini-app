@@ -204,6 +204,29 @@
   }
   .profile-btn:active{ transform: scale(0.92); }
 
+  /* Version badge */
+  .version-badge{
+    position: fixed;
+    bottom: 72px;
+    right: 12px;
+    background: var(--surface);
+    border: 1px solid var(--line-2);
+    color: var(--muted);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    padding: 4px 8px;
+    border-radius: 8px;
+    z-index: 40;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+  .version-badge .beta{
+    color: var(--gold);
+    margin-left: 4px;
+  }
+
   /* ============ SCREENS ============ */
   .screens{ flex:1; position:relative; overflow:hidden; }
   .screen{
@@ -2782,8 +2805,13 @@
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
 </div>
+<div class="version-badge">v0.9.0<span class="beta">BETA</span></div>
 
 <script>
+  // ============ APP CONFIG ============
+  const APP_VERSION = '0.9.0-beta';
+  const APP_STAGE = 'Beta';
+
   // ============ SUPABASE INIT ============
   const SUPABASE_URL = 'https://otaoqqbtawedvimbirzn.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_sj5BCNByv5jL8uS_FpI6Ag_q8SklQTR';
@@ -3827,12 +3855,31 @@
         if(status === 'paid'){
           haptic('success');
           showToast('оплата получена, активируем…', 'success');
-          // Activate premium in DB (also done by webhook, but do it here for immediate UI update)
-          const ok = await dbActivatePremium(plan.days);
-          if(ok){
-            showToast('Premium активирован!', 'success');
-            await dbCheckAchievements();
-            setTimeout(() => goTo('profile'), 1500);
+          // Activate premium via server endpoint (verifies initData + payment)
+          try{
+            const initData = tg?.initData || '';
+            const res = await fetch('/api/activate-premium', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                init_data: initData,
+                plan: plan.code,
+                user_id: getTgId()
+              })
+            });
+            const data = await res.json();
+            if(data.ok){
+              showToast('Premium активирован!', 'success');
+              await dbCheckAchievements();
+              // Refresh user data
+              currentUser = await dbEnsureUser();
+              updateProfileHeaderBadge(true);
+              setTimeout(() => goTo('profile'), 1500);
+            } else {
+              showToast('ошибка: ' + (data.error || 'активация'), 'error');
+            }
+          }catch(e){
+            showToast('ошибка сети', 'error');
           }
         } else if(status === 'cancelled'){
           showToast('оплата отменена', 'warn');

@@ -1,10 +1,11 @@
 // Telegram bot webhook handler for Vercel serverless
-const BOT_TOKEN = process.env.BOT_TOKEN || '8554075993:AAFtyDI9P9UODLnC-mhryJq2HGFX799n0TM';
-const WEBAPP_URL = process.env.WEBAPP_URL || 'https://roulette-mini-app-digerr-sergo-s-projects1.vercel.app';
-const API = `https://api.telegram.org/bot${BOT_TOKEN}`;
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const WEBAPP_URL = process.env.WEBAPP_URL;
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'roulza_wh_sec_2026_kX9mPqRsT8vW2yZ';
+const API = BOT_TOKEN ? `https://api.telegram.org/bot${BOT_TOKEN}` : '';
 
-const SB_URL = 'https://otaoqqbtawedvimbirzn.supabase.co';
-const SB_KEY = 'sb_publishable_sj5BCNByv5jL8uS_FpI6Ag_q8SklQTR';
+const SB_URL = process.env.SUPABASE_URL;
+const SB_KEY = process.env.SUPABASE_ANON_KEY;
 
 async function tg(method, payload) {
   const res = await fetch(`${API}/${method}`, {
@@ -31,8 +32,16 @@ async function sbUpdate(userId, updates){
 }
 
 export default async function handler(req, res) {
+  // CORS + status check
+  res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method !== 'POST') {
-    return res.status(200).json({ ok: true, status: 'webhook active' });
+    return res.status(200).json({ ok: true, status: 'webhook active', version: '0.9.0-beta' });
+  }
+
+  // Verify webhook secret from header or query
+  const secret = req.headers['x-webhook-secret'] || req.query.secret;
+  if(WEBHOOK_SECRET && secret !== WEBHOOK_SECRET){
+    return res.status(403).json({ ok: false, error: 'unauthorized' });
   }
 
   const update = req.body;
