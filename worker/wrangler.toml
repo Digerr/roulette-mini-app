@@ -1,0 +1,18 @@
+name = "roulza-api"
+main = "index.js"
+compatibility_date = "2024-09-23"
+account_id = ""
+
+# Routes — will be set after first deploy
+# routes = [
+#   { pattern = "api.roulza.app/*", zone_name = "roulza.app" }
+# ]
+
+[vars]
+WEBAPP_URL = "https://roulette-mini-app-digerr-sergo-s-projects1.vercel.app"
+
+# Secrets (set via `wrangler secret put`):
+# BOT_TOKEN
+# SUPABASE_URL
+# SUPABASE_ANON_KEY
+# WEBHOOK_SECRET

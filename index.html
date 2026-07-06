@@ -204,6 +204,18 @@
   }
   .profile-btn:active{ transform: scale(0.92); }
 
+  /* Language toggle */
+  .lang-toggle{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--red) !important;
+    border-color: var(--red) !important;
+    background: var(--red-tint) !important;
+  }
+  .lang-toggle:active{ transform: scale(0.92); }
+
   /* Version badge */
   .version-badge{
     position: fixed;
@@ -1916,6 +1928,9 @@
       <svg class="moon"><use href="#i-moon"/></svg>
       <svg class="sun"><use href="#i-sun"/></svg>
     </div>
+    <div class="header-btn lang-toggle" onclick="toggleLang()" title="Сменить язык" id="langToggleBtn">
+      <span id="langLabel">RU</span>
+    </div>
     <div class="header-btn profile-btn" onclick="goTo('profile')" title="Профиль" id="profileHeaderBtn">
       <svg><use href="#i-user"/></svg>
       <span class="profile-premium-badge" id="profilePremiumBadge" style="display:none;">
@@ -2009,9 +2024,9 @@
     <!-- HOME -->
     <div class="screen home-screen" data-screen="welcome">
       <div class="home-hero">
-        <div class="greeting">Привет, <span class="name" id="userGreeting">аноним</span> 👋</div>
-        <h1>Крути колесо,<br>находи <span class="red">людей</span></h1>
-        <p class="sub">Анонимная чат-рулетка. Выбери интересы и крути — мы найдём собеседника.</p>
+        <div class="greeting"><span data-i18n="home.greeting">Привет</span>, <span class="name" id="userGreeting">аноним</span> 👋</div>
+        <h1><span data-i18n="home.hero.title">Крути колесо,</span><br><span class="red" data-i18n="home.hero.title.red">находи людей</span></h1>
+        <p class="sub" data-i18n="home.hero.sub">Анонимная чат-рулетка. Выбери интересы и крути — мы найдём собеседника.</p>
       </div>
 
       <div class="home-spin-card" onclick="goTo('search')">
@@ -2025,23 +2040,23 @@
             </g>
           </svg>
         </div>
-        <div class="cta-label">// TAP TO SPIN</div>
-        <div class="cta-title">Найти собеседника</div>
-        <div class="cta-sub">1 248 человек онлайн прямо сейчас</div>
+        <div class="cta-label" data-i18n="home.spin.label">// TAP TO SPIN</div>
+        <div class="cta-title" data-i18n="home.spin.title">Найти собеседника</div>
+        <div class="cta-sub" data-i18n="home.spin.sub">1 248 человек онлайн прямо сейчас</div>
       </div>
 
       <div class="home-stats">
         <div class="home-stat">
           <div class="v" id="homeStatChats">0</div>
-          <div class="l">Чатов</div>
+          <div class="l" data-i18n="home.stat.chats">Чатов</div>
         </div>
         <div class="home-stat">
           <div class="v lime" id="homeStatMatches">0</div>
-          <div class="l">Матчей</div>
+          <div class="l" data-i18n="home.stat.matches">Матчей</div>
         </div>
         <div class="home-stat">
           <div class="v gold" id="homeStatStreak">0</div>
-          <div class="l">Streak</div>
+          <div class="l" data-i18n="home.stat.streak">Streak</div>
         </div>
       </div>
 
@@ -2057,28 +2072,28 @@
         <div class="home-action" onclick="goTo('chats')">
           <div class="ai"><svg><use href="#i-chat"/></svg></div>
           <div>
-            <div class="at">Чаты</div>
-            <div class="ad">2 активных</div>
+            <div class="at" data-i18n="home.action.chats">Чаты</div>
+            <div class="ad" data-i18n="home.action.chats.sub">0 активных</div>
           </div>
         </div>
         <div class="home-action gold" onclick="goTo('premium')">
           <div class="ai"><svg><use href="#i-crown"/></svg></div>
           <div>
-            <div class="at">Premium</div>
-            <div class="ad">Безлимит</div>
+            <div class="at" data-i18n="home.action.premium">Premium</div>
+            <div class="ad" data-i18n="home.action.premium.sub">Безлимит</div>
           </div>
         </div>
         <div class="home-action" onclick="goTo('setup')">
           <div class="ai"><svg><use href="#i-cog"/></svg></div>
           <div>
-            <div class="at">Профиль</div>
-            <div class="ad">Настроить</div>
+            <div class="at" data-i18n="home.action.profile">Профиль</div>
+            <div class="ad" data-i18n="home.action.profile.sub">Настроить</div>
           </div>
         </div>
         <div class="home-action lime" onclick="goTo('limit')">
           <div class="ai"><svg><use href="#i-bolt"/></svg></div>
           <div>
-            <div class="at">Лимиты</div>
+            <div class="at" data-i18n="home.action.limit">Лимиты</div>
             <div class="ad" id="homeLimitText">0 осталось</div>
           </div>
         </div>
@@ -2786,16 +2801,16 @@
     <!-- BOTTOM NAV -->
   <div class="bottom-nav">
     <div class="nav-item active" data-nav="welcome" onclick="goTo('welcome')">
-      <svg><use href="#i-home"/></svg><span>HOME</span>
+      <svg><use href="#i-home"/></svg><span data-i18n="nav.home">ГЛАВНАЯ</span>
     </div>
     <div class="nav-item" data-nav="search" onclick="goTo('search')">
-      <svg><use href="#i-roulette"/></svg><span>SPIN</span>
+      <svg><use href="#i-roulette"/></svg><span data-i18n="nav.spin">ПОИСК</span>
     </div>
     <div class="nav-item" data-nav="chats" onclick="goTo('chats')">
-      <svg><use href="#i-chat"/></svg><span>CHATS</span>
+      <svg><use href="#i-chat"/></svg><span data-i18n="nav.chats">ЧАТЫ</span>
     </div>
     <div class="nav-item" data-nav="profile" onclick="goTo('profile')">
-      <svg><use href="#i-user"/></svg><span>ME</span>
+      <svg><use href="#i-user"/></svg><span data-i18n="nav.profile">Я</span>
     </div>
     <div class="nav-item" data-nav="premium" onclick="goTo('premium')">
       <svg><use href="#i-crown"/></svg><span>PRO</span>
@@ -2811,6 +2826,327 @@
   // ============ APP CONFIG ============
   const APP_VERSION = '0.9.0-beta';
   const APP_STAGE = 'Beta';
+
+  // ============ I18N (RU/EN) ============
+  const I18N = {
+    ru: {
+      'nav.home': 'ГЛАВНАЯ',
+      'nav.spin': 'ПОИСК',
+      'nav.chats': 'ЧАТЫ',
+      'nav.profile': 'Я',
+      'header.faq': 'FAQ',
+      'home.greeting': 'Привет',
+      'home.hero.title': 'Крути колесо,',
+      'home.hero.title.red': 'находи людей',
+      'home.hero.sub': 'Анонимная чат-рулетка. Выбери интересы и крути — мы найдём собеседника.',
+      'home.spin.label': '// НАЖМИ ЧТОБЫ КРУТИТЬ',
+      'home.spin.title': 'Найти собеседника',
+      'home.spin.sub': '1 248 человек онлайн прямо сейчас',
+      'home.stat.chats': 'Чатов',
+      'home.stat.matches': 'Матчей',
+      'home.stat.streak': 'Streak',
+      'home.streak.text': 'дней подряд!',
+      'home.action.chats': 'Чаты',
+      'home.action.chats.sub': '0 активных',
+      'home.action.premium': 'Premium',
+      'home.action.premium.sub': 'Безлимит',
+      'home.action.profile': 'Профиль',
+      'home.action.profile.sub': 'Настроить',
+      'home.action.limit': 'Лимиты',
+      'home.action.limit.sub': 'осталось',
+      'search.ready': '// ГОТОВО К КРУЖЕНИЮ',
+      'search.title': 'Крути колесо',
+      'search.sub': 'Нажми на колесо, чтобы найти собеседника',
+      'search.spinning': '// КРУЖУ',
+      'search.tap': 'НАЖМИ',
+      'search.searching': 'ИЩУ',
+      'search.no.match': '// НЕТ СОВПАДЕНИЯ',
+      'search.nobody': 'Никого нет',
+      'search.nobody.sub': 'Сейчас в очереди нет подходящего собеседника. Попробуй позже.',
+      'search.try.again': 'ЕЩЁ РАЗ',
+      'match.connected': 'СОЕДИНЕНИЕ / НАЙДЕНО 04 СОВПАДЕНИЯ',
+      'match.chat': 'ЧАТ',
+      'match.next': 'ДАЛЕЕ',
+      'chat.online': 'ОНЛАЙН',
+      'chat.today': 'сегодня',
+      'chat.message': 'Сообщение…',
+      'chat.start': 'начни диалог',
+      'chat.loading': 'загрузка сообщений…',
+      'limit.reached': 'ЛИМИТ ИСЧЕРПАН',
+      'limit.title': 'Лимит сгорел',
+      'limit.sub': 'Бесплатные диалоги на сегодня закончились. Выбери, как продолжить.',
+      'limit.remaining': 'Осталось',
+      'limit.total': 'Лимит/день',
+      'limit.get.more': 'Получить ещё',
+      'limit.free': 'БЕСПЛАТНО',
+      'limit.invite': 'Пригласить друга',
+      'limit.invite.sub': '+2 диалога за каждого друга',
+      'limit.unlock': 'Разблокировать всё',
+      'limit.premium': 'PREMIUM',
+      'limit.back': '← вернуться домой',
+      'premium.title': 'GO PREMIUM',
+      'premium.sub': 'Раскрой все возможности рулетки',
+      'premium.features': 'Что входит',
+      'premium.plans': 'Тарифы',
+      'premium.stars': 'ЗВЁЗДЫ',
+      'premium.buy': 'КУПИТЬ ЗА ЗВЁЗДЫ →',
+      'premium.buy.tg': 'КУПИТЬ ЗА ЗВЁЗДЫ TELEGRAM →',
+      'premium.save': 'навсегда',
+      'premium.settings': 'Настройки Premium',
+      'premium.active': 'PREMIUM ACTIVE',
+      'premium.until': 'до',
+      'premium.forever': 'бессрочно',
+      'profile.my': 'мой',
+      'profile.edit': 'Редактировать профиль →',
+      'profile.faq': 'FAQ — частые вопросы →',
+      'profile.manage.premium': 'управление Premium →',
+      'profile.invite': 'пригласить друга →',
+      'profile.reset': 'сбросить профиль',
+      'profile.achievements': 'Достижения',
+      'profile.streak': '// STREAK ACTIVE',
+      'setup.step': 'НАСТРОЙКА ПРОФИЛЯ',
+      'setup.progress': '02 of 03',
+      'setup.title': 'Кто ты?',
+      'setup.sub': 'Анонимно. Никаких реальных данных — только ник и интересы.',
+      'setup.nickname': 'NICKNAME',
+      'setup.nickname.hint': 'обязательно',
+      'setup.gender': 'GENDER',
+      'setup.gender.hint': 'влияет на поиск',
+      'setup.male': 'Male',
+      'setup.female': 'Female',
+      'setup.other': 'Other',
+      'setup.age': 'AGE',
+      'setup.age.hint': '18+',
+      'setup.interests': 'Интересы',
+      'setup.interests.count': 'ВЫБРАНО',
+      'setup.find': 'НАЙТИ СОБЕСЕДНИКА',
+      'report.step': 'ЖАЛОБА / БЕЗОПАСНОСТЬ',
+      'report.title': 'Пожаловаться',
+      'report.sub': 'Мы серьёзно относимся к правилам сообщества. Выбери причину — модерация проверит в течение 24 часов.',
+      'report.reason.spam': 'Спам или реклама',
+      'report.reason.abuse': 'Оскорбления или агрессия',
+      'report.reason.adult': 'Контент 18+ без согласия',
+      'report.reason.minor': 'Несовершеннолетний',
+      'report.reason.other': 'Другое',
+      'report.comment': 'КОММЕНТАРИЙ',
+      'report.comment.hint': 'необязательно',
+      'report.comment.placeholder': 'Расскажи подробнее, что произошло...',
+      'report.submit': 'ОТПРАВИТЬ ЖАЛОБУ',
+      'report.cancel': '← отмена',
+      'chats.title': 'Чаты',
+      'chats.new': 'НОВЫЙ',
+      'chats.search': 'Поиск по чатам...',
+      'chats.all': 'Все',
+      'chats.active': 'Активные',
+      'chats.pinned': 'Избранные',
+      'chats.ended': 'Завершённые',
+      'chats.empty': 'Пока пусто',
+      'chats.empty.sub': 'Крути колесо, чтобы найти первого собеседника',
+      'chats.new.dialog': 'Новый диалог',
+      'faq.title': 'FAQ Roulza',
+      'faq.sub': 'Частые вопросы о приложении',
+      'faq.basic': 'Основное',
+      'faq.premium': 'Premium',
+      'faq.invites': 'Приглашения',
+      'faq.safety': 'Безопасность',
+      'faq.back': '← назад',
+      'toast.theme.light': 'светлая тема',
+      'toast.theme.dark': 'тёмная тема',
+      'toast.lang.ru': 'Русский',
+      'toast.lang.en': 'English',
+      'toast.premium.activating': 'оплата через Telegram Stars',
+      'toast.premium.activated': 'Premium активирован!',
+      'toast.premium.received': 'оплата получена, активируем…',
+      'toast.premium.cancelled': 'оплата отменена',
+      'toast.premium.failed': 'оплата не удалась',
+      'toast.network.error': 'ошибка сети',
+      'toast.limit.reached': 'лимит диалогов исчерпан',
+      'toast.nobody': 'никого не найдено',
+      'toast.tags.min': 'выбери минимум 3 тега',
+      'toast.tags.max': 'максимум 5 тегов',
+      'toast.profile.saving': 'сохраняем профиль…',
+      'toast.profile.saved': 'профиль сохранён',
+      'toast.profile.reset': 'профиль сброшен',
+      'toast.referral': '+2 диалога за приглашение!',
+      'toast.invite.copied': 'ссылка скопирована',
+      'toast.report.sent': 'жалоба отправлена',
+      'toast.report.sending': 'отправляем жалобу…',
+      'toast.report.select': 'выбери причину',
+      'toast.achievement': 'достижение:',
+      'toast.login.required': 'нужен вход через Telegram'
+    },
+    en: {
+      'nav.home': 'HOME',
+      'nav.spin': 'SPIN',
+      'nav.chats': 'CHATS',
+      'nav.profile': 'ME',
+      'header.faq': 'FAQ',
+      'home.greeting': 'Hi',
+      'home.hero.title': 'Spin the wheel,',
+      'home.hero.title.red': 'find people',
+      'home.hero.sub': 'Anonymous chat roulette. Pick interests and spin — we\'ll find a match.',
+      'home.spin.label': '// TAP TO SPIN',
+      'home.spin.title': 'Find a partner',
+      'home.spin.sub': '1,248 people online right now',
+      'home.stat.chats': 'Chats',
+      'home.stat.matches': 'Matches',
+      'home.stat.streak': 'Streak',
+      'home.streak.text': 'days in a row!',
+      'home.action.chats': 'Chats',
+      'home.action.chats.sub': '0 active',
+      'home.action.premium': 'Premium',
+      'home.action.premium.sub': 'Unlimited',
+      'home.action.profile': 'Profile',
+      'home.action.profile.sub': 'Setup',
+      'home.action.limit': 'Limits',
+      'home.action.limit.sub': 'left',
+      'search.ready': '// READY TO SPIN',
+      'search.title': 'Spin the wheel',
+      'search.sub': 'Tap the wheel to find a partner',
+      'search.spinning': '// SPINNING',
+      'search.tap': 'TAP',
+      'search.searching': 'SEARCHING',
+      'search.no.match': '// NO MATCH',
+      'search.nobody': 'Nobody here',
+      'search.nobody.sub': 'No matching partner in queue right now. Try again later.',
+      'search.try.again': 'TRY AGAIN',
+      'match.connected': 'CONNECTED / 04 MATCHES FOUND',
+      'match.chat': 'CHAT',
+      'match.next': 'NEXT',
+      'chat.online': 'ONLINE',
+      'chat.today': 'today',
+      'chat.message': 'Message…',
+      'chat.start': 'start the chat',
+      'chat.loading': 'loading messages…',
+      'limit.reached': 'LIMITS REACHED',
+      'limit.title': 'Out of chats',
+      'limit.sub': 'Free daily chats are over. Choose how to continue.',
+      'limit.remaining': 'Left',
+      'limit.total': 'Limit/day',
+      'limit.get.more': 'Get more',
+      'limit.free': 'FREE',
+      'limit.invite': 'Invite a friend',
+      'limit.invite.sub': '+2 chats per friend who joins',
+      'limit.unlock': 'Unlock everything',
+      'limit.premium': 'PREMIUM',
+      'limit.back': '← back home',
+      'premium.title': 'GO PREMIUM',
+      'premium.sub': 'Unlock all roulette features',
+      'premium.features': 'What\'s included',
+      'premium.plans': 'Plans',
+      'premium.stars': 'STARS',
+      'premium.buy': 'BUY WITH STARS →',
+      'premium.buy.tg': 'BUY WITH TELEGRAM STARS →',
+      'premium.save': 'forever',
+      'premium.settings': 'Premium Settings',
+      'premium.active': 'PREMIUM ACTIVE',
+      'premium.until': 'until',
+      'premium.forever': 'forever',
+      'profile.my': 'my',
+      'profile.edit': 'Edit profile →',
+      'profile.faq': 'FAQ — common questions →',
+      'profile.manage.premium': 'manage Premium →',
+      'profile.invite': 'invite a friend →',
+      'profile.reset': 'reset profile',
+      'profile.achievements': 'Achievements',
+      'profile.streak': '// STREAK ACTIVE',
+      'setup.step': 'PROFILE SETUP',
+      'setup.progress': '02 of 03',
+      'setup.title': 'Who are you?',
+      'setup.sub': 'Anonymous. No real data — just nickname and interests.',
+      'setup.nickname': 'NICKNAME',
+      'setup.nickname.hint': 'required',
+      'setup.gender': 'GENDER',
+      'setup.gender.hint': 'affects search',
+      'setup.male': 'Male',
+      'setup.female': 'Female',
+      'setup.other': 'Other',
+      'setup.age': 'AGE',
+      'setup.age.hint': '18+',
+      'setup.interests': 'Interests',
+      'setup.interests.count': 'SELECTED',
+      'setup.find': 'FIND A PARTNER',
+      'report.step': 'REPORT / SAFETY',
+      'report.title': 'Report',
+      'report.sub': 'We take community rules seriously. Pick a reason — moderation will review within 24 hours.',
+      'report.reason.spam': 'Spam or ads',
+      'report.reason.abuse': 'Abuse or aggression',
+      'report.reason.adult': '18+ content without consent',
+      'report.reason.minor': 'Underage',
+      'report.reason.other': 'Other',
+      'report.comment': 'COMMENT',
+      'report.comment.hint': 'optional',
+      'report.comment.placeholder': 'Tell us more about what happened...',
+      'report.submit': 'SUBMIT REPORT',
+      'report.cancel': '← cancel',
+      'chats.title': 'Chats',
+      'chats.new': 'NEW',
+      'chats.search': 'Search chats...',
+      'chats.all': 'All',
+      'chats.active': 'Active',
+      'chats.pinned': 'Pinned',
+      'chats.ended': 'Ended',
+      'chats.empty': 'Nothing here yet',
+      'chats.empty.sub': 'Spin the wheel to find your first chat partner',
+      'chats.new.dialog': 'New dialog',
+      'faq.title': 'Roulza FAQ',
+      'faq.sub': 'Common questions about the app',
+      'faq.basic': 'Basic',
+      'faq.premium': 'Premium',
+      'faq.invites': 'Invites',
+      'faq.safety': 'Safety',
+      'faq.back': '← back',
+      'toast.theme.light': 'light theme',
+      'toast.theme.dark': 'dark theme',
+      'toast.lang.ru': 'Русский',
+      'toast.lang.en': 'English',
+      'toast.premium.activating': 'paying with Telegram Stars',
+      'toast.premium.activated': 'Premium activated!',
+      'toast.premium.received': 'payment received, activating…',
+      'toast.premium.cancelled': 'payment cancelled',
+      'toast.premium.failed': 'payment failed',
+      'toast.network.error': 'network error',
+      'toast.limit.reached': 'chat limit reached',
+      'toast.nobody': 'nobody found',
+      'toast.tags.min': 'select at least 3 tags',
+      'toast.tags.max': 'max 5 tags',
+      'toast.profile.saving': 'saving profile…',
+      'toast.profile.saved': 'profile saved',
+      'toast.profile.reset': 'profile reset',
+      'toast.referral': '+2 chats for invite!',
+      'toast.invite.copied': 'link copied',
+      'toast.report.sent': 'report sent',
+      'toast.report.sending': 'sending report…',
+      'toast.report.select': 'select a reason',
+      'toast.achievement': 'achievement:',
+      'toast.login.required': 'login via Telegram required'
+    }
+  };
+
+  let currentLang = 'ru';
+  function t(key){
+    return I18N[currentLang]?.[key] || I18N.ru[key] || key;
+  }
+  function applyI18n(){
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = t(el.dataset.i18n);
+    });
+    document.documentElement.lang = currentLang;
+    try { localStorage.setItem('roulza-lang', currentLang); } catch(e){}
+  }
+  function toggleLang(){
+    currentLang = currentLang === 'ru' ? 'en' : 'ru';
+    applyI18n();
+    const lbl = document.getElementById('langLabel');
+    if(lbl) lbl.textContent = currentLang === 'ru' ? 'RU' : 'EN';
+    haptic('light');
+    showToast(currentLang === 'ru' ? 'Русский' : 'English', 'success');
+  }
+  // Load saved language
+  try {
+    const saved = localStorage.getItem('roulza-lang');
+    if(saved === 'en' || saved === 'ru') currentLang = saved;
+  } catch(e){}
 
   // ============ SUPABASE INIT ============
   const SUPABASE_URL = 'https://otaoqqbtawedvimbirzn.supabase.co';
@@ -3497,11 +3833,11 @@
     clearInterval(searchTimer);
     clearInterval(onlineTimer);
     isSearching = false;
-    document.getElementById('searchLabel').textContent = '// READY TO SPIN';
-    document.getElementById('searchStatus').textContent = 'Крути колесо';
-    document.getElementById('searchSub').textContent = 'Нажми на колесо, чтобы найти собеседника';
+    document.getElementById('searchLabel').textContent = t('search.ready');
+    document.getElementById('searchStatus').textContent = t('search.title');
+    document.getElementById('searchSub').textContent = t('search.sub');
     document.getElementById('searchCount').textContent = 'GO';
-    document.getElementById('searchLab').textContent = 'TAP TO SPIN';
+    document.getElementById('searchLab').textContent = t('search.tap');
     const wheel = document.getElementById('searchWheelBtn');
     if(wheel){
       wheel.classList.remove('spinning');
@@ -3534,11 +3870,11 @@
       wheel.style.opacity = '0.92';
     }
 
-    document.getElementById('searchLabel').textContent = '// SPINNING';
+    document.getElementById('searchLabel').textContent = t('search.spinning');
     document.getElementById('searchStatus').textContent = searchPhases[0].t;
     document.getElementById('searchSub').textContent = searchPhases[0].s;
     document.getElementById('searchCount').textContent = '00';
-    document.getElementById('searchLab').textContent = 'SEARCHING';
+    document.getElementById('searchLab').textContent = t('search.searching');
 
     let i = 0;
     clearInterval(searchTimer);
@@ -3584,13 +3920,13 @@
         wheel.style.pointerEvents = 'auto';
         wheel.style.opacity = '1';
       }
-      document.getElementById('searchLabel').textContent = '// NO MATCH';
-      document.getElementById('searchStatus').textContent = 'Никого нет';
-      document.getElementById('searchSub').textContent = 'Сейчас в очереди нет подходящего собеседника. Попробуй позже.';
+      document.getElementById('searchLabel').textContent = t('search.no.match');
+      document.getElementById('searchStatus').textContent = t('search.nobody');
+      document.getElementById('searchSub').textContent = t('search.nobody.sub');
       document.getElementById('searchCount').textContent = '00';
-      document.getElementById('searchLab').textContent = 'TRY AGAIN';
+      document.getElementById('searchLab').textContent = t('search.try.again');
       haptic('warning');
-      showToast('никого не найдено', 'warn');
+      showToast(t('toast.nobody'), 'warn');
       return;
     }
 
@@ -3614,11 +3950,11 @@
         wheel.style.pointerEvents = 'auto';
         wheel.style.opacity = '1';
       }
-      document.getElementById('searchLabel').textContent = '// NO MATCH';
-      document.getElementById('searchStatus').textContent = 'Никого нет';
-      document.getElementById('searchSub').textContent = 'Попробуй позже.';
+      document.getElementById('searchLabel').textContent = t('search.no.match');
+      document.getElementById('searchStatus').textContent = t('search.nobody');
+      document.getElementById('searchSub').textContent = t('search.nobody.sub');
       document.getElementById('searchCount').textContent = '00';
-      document.getElementById('searchLab').textContent = 'TRY AGAIN';
+      document.getElementById('searchLab').textContent = t('search.try.again');
     }
   }
 
@@ -4484,6 +4820,11 @@
       goTo('welcome');
     }
   }catch(e){}
+
+  // Apply i18n on load + set initial lang label
+  applyI18n();
+  const _langLabel = document.getElementById('langLabel');
+  if(_langLabel) _langLabel.textContent = currentLang === 'ru' ? 'RU' : 'EN';
 </script>
 </body>
 </html>
